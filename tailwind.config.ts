@@ -1,3 +1,4 @@
+// tailwind.config.ts
 import type { Config } from "tailwindcss";
 
 const config: Config = {
@@ -8,7 +9,7 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Aquí podrías añadir tus fuentes personalizadas si las usas
+      // Aquí es donde sucede la magia del diseño minimalista
     },
   },
   plugins: [],

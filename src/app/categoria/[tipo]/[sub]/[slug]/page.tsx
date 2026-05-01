@@ -2,7 +2,7 @@
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import BackButton from '@/components/BackButton';
-import { CldImage } from 'next-cloudinary'; // Importamos Cloudinary
+import { CldImage } from 'next-cloudinary';
 
 export default function ProductDetailPage({ params: paramsPromise }: { params: Promise<{ slug: string }> }) {
   const params = use(paramsPromise);
@@ -37,88 +37,104 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
     setLoading(false);
   }
 
-  if (loading) return <div className="py-40 text-center font-black italic tracking-widest uppercase text-black">Cargando Luxury RPK...</div>;
-  if (!product) return <div className="py-40 text-center font-black uppercase text-black">Producto no encontrado</div>;
+  if (loading) return <div className="py-40 text-center font-black italic tracking-[0.5em] uppercase text-black animate-pulse">Cargando Luxury RPK...</div>;
+  if (!product) return <div className="py-40 text-center font-black uppercase text-black tracking-tighter text-2xl italic">Producto no encontrado</div>;
 
   return (
-    <div className="bg-white min-h-screen pt-24 pb-20 px-6">
+    <div className="bg-white min-h-screen pt-32 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         
-        <div className="mb-8">
+        <div className="mb-12">
           <BackButton />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24">
           
-          {/* GALERÍA DE IMÁGENES OPTIMIZADA */}
-          <div className="space-y-4">
+          {/* GALERÍA DE IMÁGENES */}
+          <div className="space-y-6">
             {(() => {
-              // 1. Normalizamos a un array de strings
               const imagesArray: string[] = Array.isArray(product.image_url) 
                 ? product.image_url 
                 : [product.image_url];
 
-              // 2. Filtramos (especificamos que 'img' es string)
               const validImages = imagesArray.filter((img: string) => 
                 typeof img === 'string' && img.trim() !== ""
               );
 
-              // 3. Mapeamos para el renderizado
               if (validImages.length > 0) {
                 return validImages.map((img: string, idx: number) => (
-                  <CldImage 
-                    key={idx}
-                    width="800"
-                    height="1000"
-                    src={img} 
-                    alt={`${product.name} - Vista ${idx + 1}`}
-                    crop="fill"
-                    gravity="center"
-                    className="w-full bg-zinc-50 border border-zinc-100 object-cover"
-                  />
+                  <div key={idx} className="bg-zinc-50 border border-zinc-100 overflow-hidden">
+                    <CldImage 
+                      width="1000"
+                      height="1250"
+                      src={img} 
+                      alt={`${product.name} - Vista ${idx + 1}`}
+                      crop="fill"
+                      gravity="center"
+                      className="w-full object-cover hover:scale-105 transition-transform duration-1000"
+                    />
+                  </div>
                 ));
               }
 
               return (
-                <div className="w-full aspect-[4/5] bg-zinc-100 flex flex-col items-center justify-center text-zinc-400">
-                  <span className="text-4xl mb-2">✕</span>
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em]">Sin imágenes disponibles</span>
+                <div className="w-full aspect-[4/5] bg-zinc-50 flex flex-col items-center justify-center text-zinc-300 border border-dashed border-zinc-200">
+                  <span className="text-5xl mb-4 font-light text-zinc-200">✕</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.5em]">Sin imágenes</span>
                 </div>
               );
             })()}
           </div>
 
-          {/* INFO DEL PRODUCTO */}
-          <div className="flex flex-col justify-start md:pt-10">
-            <h1 className="text-5xl font-black uppercase italic leading-none mb-4 tracking-tighter text-black">
-              {product.name}
-            </h1>
-            <p className="text-2xl font-medium italic text-zinc-500 mb-10">
-              ${Number(product.price).toLocaleString('es-CL')}
-            </p>
+          {/* INFO DEL PRODUCTO (Sticky en Desktop) */}
+          <div className="flex flex-col justify-start md:sticky md:top-32 h-fit">
+            <div className="border-b border-zinc-100 pb-10 mb-10">
+              <span className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-400 mb-4 block">
+                {product.category} / {product.subcategory}
+              </span>
+              <h1 className="text-6xl lg:text-7xl font-black uppercase italic leading-[0.9] mb-6 tracking-tighter text-black">
+                {product.name}
+              </h1>
+              <p className="text-3xl font-medium italic text-zinc-900">
+                ${Number(product.price).toLocaleString('es-CL')}
+              </p>
+            </div>
             
-            <a 
-              href="https://www.instagram.com/luxuryrpk.cl/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-full bg-black text-white font-black py-5 text-xs uppercase tracking-[0.3em] hover:bg-zinc-800 transition-all text-center block"
-            >
-              Consultar disponibilidad vía Instagram
-            </a>
+            <div className="space-y-4">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-6 leading-relaxed">
+                Producto con entrega inmediata en Valdivia. Para envíos a otras regiones o consultas de tallas, escríbenos directamente.
+              </p>
+              
+              <a 
+                href="https://www.instagram.com/luxuryrpk.cl/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full bg-black text-white font-black py-6 text-[10px] uppercase tracking-[0.4em] hover:bg-zinc-800 transition-all text-center block border border-black"
+              >
+                Consultar vía Instagram
+              </a>
+              
+              <button className="w-full bg-transparent text-black font-black py-6 text-[10px] uppercase tracking-[0.4em] hover:bg-zinc-50 transition-all text-center block border border-black/10">
+                Guía de tallas
+              </button>
+            </div>
 
             {isAdmin && (
-              <div className="mt-16 p-6 bg-zinc-50 border border-black border-dashed">
-                <p className="text-[10px] font-black uppercase mb-4 tracking-widest text-black">Modo Administrador</p>
+              <div className="mt-20 p-8 bg-zinc-50 border border-black border-dashed">
+                <p className="text-[10px] font-black uppercase mb-6 tracking-widest text-black flex items-center gap-2">
+                  <span className="w-2 h-2 bg-red-600 rounded-full animate-ping"></span>
+                  Panel de Control
+                </p>
                 <button 
-                  className="text-[9px] bg-red-600 text-white px-4 py-2 font-black uppercase hover:bg-black transition-all"
+                  className="w-full text-[10px] bg-red-600 text-white px-4 py-4 font-black uppercase tracking-[0.2em] hover:bg-black transition-all"
                   onClick={async () => {
-                     if(confirm('¿Borrar definitivamente?')) {
+                     if(confirm('¿Confirmas que quieres eliminar esta pieza de Luxury RPK?')) {
                        await supabase.from('products').delete().eq('id', product.id);
                        window.location.href = '/';
                      }
                   }}
                 >
-                  Eliminar este producto
+                  Eliminar Producto
                 </button>
               </div>
             )}
