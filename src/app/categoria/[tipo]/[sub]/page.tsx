@@ -13,6 +13,7 @@ interface Product {
   slug: string;
   category: string;
   subcategory: string;
+  product_type: string; // Añadido para manejar el stock
 }
 
 export default function SubcategoryPage({ params: paramsPromise }: { params: Promise<{ tipo: string; sub: string }> }) {
@@ -23,11 +24,13 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
   const [search, setSearch] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
 
+  // ESTADO INICIAL ACTUALIZADO: image_url ahora es un array vacío y dinámico
   const [newProduct, setNewProduct] = useState({ 
     name: '', 
     price: 0, 
-    image_url: ['', '', ''], 
-    slug: '' 
+    image_url: [] as string[], 
+    slug: '',
+    product_type: 'in_stock' // Valor por defecto
   });
 
   useEffect(() => {
@@ -64,22 +67,17 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
     return acc;
   }, {});
 
+  // Lógica de subida ILIMITADA
   const handleUploadSuccess = (result: any) => {
     const secureUrl = result.info.secure_url;
-    setNewProduct(prev => {
-      const firstEmptyIndex = prev.image_url.findIndex(url => url === '');
-      if (firstEmptyIndex !== -1) {
-        const updatedImages = [...prev.image_url];
-        updatedImages[firstEmptyIndex] = secureUrl;
-        return { ...prev, image_url: updatedImages };
-      }
-      return prev;
-    });
+    setNewProduct(prev => ({
+      ...prev,
+      image_url: [...prev.image_url, secureUrl] // Agregamos la nueva URL al array existente
+    }));
   };
 
   const removeImage = (index: number) => {
-    const updatedImages = [...newProduct.image_url];
-    updatedImages[index] = '';
+    const updatedImages = newProduct.image_url.filter((_, i) => i !== index);
     setNewProduct({ ...newProduct, image_url: updatedImages });
   };
 
@@ -93,18 +91,14 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
 
   async function addProduct(e: React.FormEvent) {
     e.preventDefault();
-    const finalImages = newProduct.image_url.filter(url => url.trim() !== '');
-
     const { error } = await supabase.from('products').insert([{
       ...newProduct,
-      image_url: finalImages,
       category: params.tipo.toLowerCase(),
       subcategory: params.sub.toLowerCase(),
-      product_type: 'in_stock'
     }]);
     
     if (!error) {
-      setNewProduct({ name: '', price: 0, image_url: ['', '', ''], slug: '' });
+      setNewProduct({ name: '', price: 0, image_url: [], slug: '', product_type: 'in_stock' });
       setShowAddForm(false);
       fetchProducts();
     } else {
@@ -120,7 +114,6 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
         
         <BackButton />
 
-        {/* HEADER MEJORADO */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-8">
           <div>
             <h1 className="text-7xl md:text-8xl font-black uppercase italic tracking-tighter leading-none text-black">
@@ -140,7 +133,6 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
           </div>
         </div>
 
-        {/* PANEL ADMIN REESTILIZADO */}
         {isAdmin && (
           <div className="mb-20 border-y border-zinc-100 py-12 bg-zinc-50/50 px-6">
             <button 
@@ -154,49 +146,65 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
               <form onSubmit={addProduct} className="mt-12 grid grid-cols-1 gap-12 max-w-4xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Nombre del Producto</label>
-                        <input type="text" placeholder="EJ: JORDAN 4 RETRO" className="w-full bg-white p-5 text-xs font-bold border border-zinc-200 outline-none focus:border-black uppercase italic" required 
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Nombre</label>
+                        <input type="text" placeholder="JORDAN 4 RETRO" className="w-full bg-white p-5 text-xs font-bold border border-zinc-200 outline-none focus:border-black uppercase italic" required 
                             onChange={e => setNewProduct({...newProduct, name: e.target.value})} value={newProduct.name} />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Precio de Venta (CLP)</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Precio (CLP)</label>
                         <input type="number" placeholder="120000" className="w-full bg-white p-5 text-xs font-bold border border-zinc-200 outline-none focus:border-black" required 
                             onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} value={newProduct.price} />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Slug</label>
+                        <input type="text" placeholder="j4-retro-black" className="w-full bg-white p-5 text-xs font-bold border border-zinc-200 outline-none focus:border-black" required 
+                            onChange={e => setNewProduct({...newProduct, slug: e.target.value})} value={newProduct.slug} />
+                    </div>
+                    
+                    {/* SELECTOR DE DISPONIBILIDAD */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Disponibilidad</label>
+                      <select 
+                        className="w-full bg-white p-5 text-xs font-bold border border-zinc-200 outline-none focus:border-black uppercase italic"
+                        value={newProduct.product_type}
+                        onChange={e => setNewProduct({...newProduct, product_type: e.target.value})}
+                      >
+                        <option value="in_stock">Entrega Inmediata (Valdivia)</option>
+                        <option value="pre_order">Bajo Pedido (Encargo)</option>
+                        <option value="sold_out">Agotado</option>
+                      </select>
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Galería de Imágenes (Cloudinary)</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Galería de Imágenes</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
                     {newProduct.image_url.map((url, index) => (
-                      <div key={index} className="relative aspect-square border border-zinc-200 bg-white flex items-center justify-center overflow-hidden group">
-                        {url ? (
-                          <>
-                            <img src={url} alt="preview" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                            <button 
-                              type="button" 
-                              onClick={() => removeImage(index)}
-                              className="absolute inset-0 bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-all font-black text-[9px] uppercase tracking-widest"
-                            >
-                              Remover
-                            </button>
-                          </>
-                        ) : (
-                          <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleUploadSuccess}>
-                            {({ open }) => (
-                              <button 
-                                type="button" 
-                                onClick={() => open()}
-                                className="w-full h-full flex flex-col items-center justify-center space-y-3 text-zinc-300 hover:text-black hover:bg-zinc-50 transition-all"
-                              >
-                                <span className="text-3xl font-light">+</span>
-                                <span className="text-[9px] font-black uppercase tracking-[0.2em]">Subir</span>
-                              </button>
-                            )}
-                          </CldUploadWidget>
-                        )}
+                      <div key={index} className="relative aspect-square border border-zinc-200 bg-white group overflow-hidden">
+                        <img src={url} alt="preview" className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => removeImage(index)}
+                          className="absolute inset-0 bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-all font-black text-[8px] uppercase"
+                        >
+                          Remover
+                        </button>
                       </div>
                     ))}
+                    
+                    {/* Botón de subida siempre disponible */}
+                    <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleUploadSuccess}>
+                      {({ open }) => (
+                        <button 
+                          type="button" 
+                          onClick={() => open()}
+                          className="aspect-square border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center space-y-2 text-zinc-300 hover:text-black hover:border-black transition-all"
+                        >
+                          <span className="text-2xl font-light">+</span>
+                          <span className="text-[8px] font-black uppercase tracking-widest">Subir</span>
+                        </button>
+                      )}
+                    </CldUploadWidget>
                   </div>
                 </div>
 
@@ -208,7 +216,6 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
           </div>
         )}
 
-        {/* GRILLA DE PRODUCTOS ESTILO DROP */}
         <div className="space-y-32">
           {Object.keys(groupedProducts).map((modelName) => (
             <div key={modelName} className="group/section">
@@ -224,22 +231,25 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
                   <div key={product.id} className="relative group">
                     <Link href={`/categoria/${product.category}/${product.subcategory}/${product.slug}`}>
                       <div className="aspect-[4/5] bg-zinc-50 overflow-hidden mb-6 border border-zinc-100 relative">
-                        {/* Overlay de Hover */}
+                        {/* ETIQUETA DE STOCK EN LA MINIATURA */}
+                        {product.product_type !== 'in_stock' && (
+                          <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur px-3 py-1 border border-zinc-200">
+                             <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Bajo Pedido</p>
+                          </div>
+                        )}
+                        
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors z-10" />
                         
                         {(() => {
                           const imgs = product.image_url;
-                          const hasValidContent = Array.isArray(imgs) 
-                            ? (imgs.length > 0 && typeof imgs[0] === 'string' && imgs[0].trim() !== "")
-                            : (typeof imgs === 'string' && (imgs as string).trim() !== "");
+                          const hasValidContent = Array.isArray(imgs) && imgs.length > 0;
 
                           if (hasValidContent) {
-                            const displaySrc = Array.isArray(imgs) ? imgs[0] : (imgs as string);
                             return (
                               <CldImage
                                 width="600"
                                 height="750"
-                                src={displaySrc}
+                                src={imgs[0]}
                                 alt={product.name}
                                 className="object-cover w-full h-full grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
                               />
@@ -249,7 +259,7 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
                           return (
                             <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-100 text-zinc-300">
                               <span className="text-2xl mb-2 font-light">✕</span>
-                              <span className="text-[8px] font-black uppercase tracking-[0.4em]">Image Missing</span>
+                              <span className="text-[8px] font-black uppercase tracking-[0.4em]">Sin Foto</span>
                             </div>
                           );
                         })()}

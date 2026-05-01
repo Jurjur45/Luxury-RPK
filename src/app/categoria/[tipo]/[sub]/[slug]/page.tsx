@@ -50,7 +50,7 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24">
           
-          {/* GALERÍA DE IMÁGENES */}
+          {/* GALERÍA DE IMÁGENES (Ahora soporta N cantidad de fotos) */}
           <div className="space-y-6">
             {(() => {
               const imagesArray: string[] = Array.isArray(product.image_url) 
@@ -86,9 +86,27 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
             })()}
           </div>
 
-          {/* INFO DEL PRODUCTO (Sticky en Desktop) */}
+          {/* INFO DEL PRODUCTO */}
           <div className="flex flex-col justify-start md:sticky md:top-32 h-fit">
             <div className="border-b border-zinc-100 pb-10 mb-10">
+              
+              {/* BADGE DINÁMICO SEGÚN PRODUCT_TYPE */}
+              <div className="mb-8">
+                {product.product_type === 'in_stock' ? (
+                  <span className="bg-black text-white text-[9px] font-black px-4 py-2 uppercase italic tracking-[0.2em]">
+                    ✓ Stock en Valdivia (Entrega Inmediata)
+                  </span>
+                ) : product.product_type === 'pre_order' ? (
+                  <span className="bg-zinc-100 text-zinc-500 text-[9px] font-black px-4 py-2 uppercase italic tracking-[0.2em] border border-zinc-200">
+                    ✈ Bajo Pedido (Envío Internacional)
+                  </span>
+                ) : (
+                  <span className="bg-red-50 text-red-600 text-[9px] font-black px-4 py-2 uppercase italic tracking-[0.2em] border border-red-100">
+                    ✕ Agotado Temporalmente
+                  </span>
+                )}
+              </div>
+
               <span className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-400 mb-4 block">
                 {product.category} / {product.subcategory}
               </span>
@@ -102,7 +120,9 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
             
             <div className="space-y-4">
               <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-6 leading-relaxed">
-                Producto con entrega inmediata en Valdivia. Para envíos a otras regiones o consultas de tallas, escríbenos directamente.
+                {product.product_type === 'in_stock' 
+                  ? "Pieza disponible para retiro hoy mismo en Valdivia o envío flash a regiones."
+                  : "Esta pieza se gestiona por encargo. Tiempo estimado de llegada: 10-15 días hábiles."}
               </p>
               
               <a 
@@ -111,7 +131,7 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
                 rel="noopener noreferrer"
                 className="w-full bg-black text-white font-black py-6 text-[10px] uppercase tracking-[0.4em] hover:bg-zinc-800 transition-all text-center block border border-black"
               >
-                Consultar vía Instagram
+                {product.product_type === 'in_stock' ? 'Consultar Disponibilidad' : 'Hacer Pedido vía Instagram'}
               </a>
               
               <button className="w-full bg-transparent text-black font-black py-6 text-[10px] uppercase tracking-[0.4em] hover:bg-zinc-50 transition-all text-center block border border-black/10">
@@ -123,18 +143,18 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
               <div className="mt-20 p-8 bg-zinc-50 border border-black border-dashed">
                 <p className="text-[10px] font-black uppercase mb-6 tracking-widest text-black flex items-center gap-2">
                   <span className="w-2 h-2 bg-red-600 rounded-full animate-ping"></span>
-                  Panel de Control
+                  Modo Editor
                 </p>
                 <button 
                   className="w-full text-[10px] bg-red-600 text-white px-4 py-4 font-black uppercase tracking-[0.2em] hover:bg-black transition-all"
                   onClick={async () => {
-                     if(confirm('¿Confirmas que quieres eliminar esta pieza de Luxury RPK?')) {
+                     if(confirm('¿Eliminar esta pieza de la base de datos?')) {
                        await supabase.from('products').delete().eq('id', product.id);
                        window.location.href = '/';
                      }
                   }}
                 >
-                  Eliminar Producto
+                  Eliminar del Catálogo
                 </button>
               </div>
             )}
