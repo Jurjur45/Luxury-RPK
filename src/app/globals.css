@@ -1,16 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+@layer base {
+  body {
+    @apply bg-white text-black antialiased;
+  }
+}
+
+/* Si quieres añadir estilos personalizados, hazlo aquí abajo */
 :root {
   --background: #ffffff;
   --foreground: #000000;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  /* Esto asegura que no haya márgenes extraños que rompan el minimalismo */
-  margin: 0;
-  padding: 0;
 }
