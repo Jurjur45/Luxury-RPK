@@ -2,6 +2,7 @@
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import BackButton from '@/components/BackButton';
+import { CldImage } from 'next-cloudinary'; // Importamos Cloudinary
 
 export default function ProductDetailPage({ params: paramsPromise }: { params: Promise<{ slug: string }> }) {
   const params = use(paramsPromise);
@@ -43,21 +44,37 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
     <div className="bg-white min-h-screen pt-24 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         
-        {/* 1. EL BACK BUTTON VA AQUÍ (Fuera de la grilla para que tenga su propio espacio) */}
         <div className="mb-8">
           <BackButton />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           
-          {/* GALERÍA DE IMÁGENES */}
+          {/* GALERÍA DE IMÁGENES OPTIMIZADA */}
           <div className="space-y-4">
             {Array.isArray(product.image_url) ? (
               product.image_url.map((img: string, idx: number) => (
-                <img key={idx} src={img} alt={product.name} className="w-full bg-zinc-50 border border-zinc-100" />
+                <CldImage 
+                  key={idx}
+                  width="800" // Definimos un tamaño base para optimización
+                  height="1000"
+                  src={img} 
+                  alt={product.name}
+                  crop="fill"
+                  gravity="center"
+                  className="w-full bg-zinc-50 border border-zinc-100 object-cover"
+                />
               ))
             ) : (
-              <img src={product.image_url} alt={product.name} className="w-full bg-zinc-50 border border-zinc-100" />
+              <CldImage 
+                width="800"
+                height="1000"
+                src={product.image_url} 
+                alt={product.name}
+                crop="fill"
+                gravity="center"
+                className="w-full bg-zinc-50 border border-zinc-100 object-cover"
+              />
             )}
           </div>
 
@@ -70,7 +87,6 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
               ${Number(product.price).toLocaleString('es-CL')}
             </p>
             
-            {/* 2. BOTÓN DE INSTAGRAM (Limpio, sin botones anidados) */}
             <a 
               href="https://www.instagram.com/luxuryrpk.cl/" 
               target="_blank" 
@@ -80,14 +96,13 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
               Consultar disponibilidad vía Instagram
             </a>
 
-            {/* PANEL ADMIN DISCRETO */}
             {isAdmin && (
               <div className="mt-16 p-6 bg-zinc-50 border border-black border-dashed">
                 <p className="text-[10px] font-black uppercase mb-4 tracking-widest text-black">Modo Administrador</p>
                 <button 
                   className="text-[9px] bg-red-600 text-white px-4 py-2 font-black uppercase hover:bg-black transition-all"
                   onClick={async () => {
-                     if(confirm('¿Borrar definitivamente de Luxury RPK?')) {
+                     if(confirm('¿Borrar definitivamente?')) {
                        await supabase.from('products').delete().eq('id', product.id);
                        window.location.href = '/';
                      }

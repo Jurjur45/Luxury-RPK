@@ -2,7 +2,8 @@
 import { useState, useEffect, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import BackButton from '@/components/BackButton'; // 1. Importación
+import BackButton from '@/components/BackButton';
+import { CldUploadWidget, CldImage } from 'next-cloudinary'; // Importamos las herramientas de Cloudinary
 
 interface Product {
   id: string;
@@ -65,6 +66,26 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
     return acc;
   }, {});
 
+  // Función para manejar la subida de Cloudinary
+  const handleUploadSuccess = (result: any) => {
+    const secureUrl = result.info.secure_url;
+    setNewProduct(prev => {
+      const firstEmptyIndex = prev.image_url.findIndex(url => url === '');
+      if (firstEmptyIndex !== -1) {
+        const updatedImages = [...prev.image_url];
+        updatedImages[firstEmptyIndex] = secureUrl;
+        return { ...prev, image_url: updatedImages };
+      }
+      return prev;
+    });
+  };
+
+  const removeImage = (index: number) => {
+    const updatedImages = [...newProduct.image_url];
+    updatedImages[index] = '';
+    setNewProduct({ ...newProduct, image_url: updatedImages });
+  };
+
   async function deleteProduct(id: string) {
     if (confirm('¿Seguro que quieres borrar este producto de Luxury RPK?')) {
       const { error } = await supabase.from('products').delete().eq('id', id);
@@ -94,19 +115,12 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
     }
   }
 
-  const updateImage = (index: number, value: string) => {
-    const newImages = [...newProduct.image_url];
-    newImages[index] = value;
-    setNewProduct({ ...newProduct, image_url: newImages });
-  };
-
   if (loading) return <div className="py-40 text-center font-black uppercase italic tracking-widest">Cargando Luxury RPK...</div>;
 
   return (
     <div className="bg-white min-h-screen pt-24 pb-20">
       <main className="max-w-7xl mx-auto px-6">
         
-        {/* 2. AGREGAMOS EL BOTÓN AQUÍ */}
         <BackButton />
 
         {/* HEADER */}
@@ -127,7 +141,7 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
           />
         </div>
 
-        {/* ... resto del código del panel admin y grilla ... */}
+        {/* PANEL ADMIN CON CLOUDINARY */}
         {isAdmin && (
           <div className="mb-12 border-t border-zinc-100 pt-8">
             <button 
@@ -138,43 +152,64 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
             </button>
             
             {showAddForm && (
-              <form onSubmit={addProduct} className="mt-8 p-8 border border-black grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-zinc-50">
-                {/* Inputs del formulario */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase">Nombre Modelo</label>
-                  <input type="text" placeholder="Jordan 4" className="w-full p-3 text-xs border border-zinc-200 outline-none" required 
-                    onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+              <form onSubmit={addProduct} className="mt-8 p-8 border border-black grid grid-cols-1 gap-8 bg-zinc-50">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase tracking-widest">Nombre Modelo</label>
+                        <input type="text" placeholder="Jordan 4" className="w-full p-4 text-xs border border-zinc-200 outline-none focus:border-black" required 
+                            onChange={e => setNewProduct({...newProduct, name: e.target.value})} value={newProduct.name} />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase tracking-widest">Precio (CLP)</label>
+                        <input type="number" placeholder="120000" className="w-full p-4 text-xs border border-zinc-200 outline-none focus:border-black" required 
+                            onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} value={newProduct.price} />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase tracking-widest">Slug (Único)</label>
+                        <input type="text" placeholder="jordan-4-midnight" className="w-full p-4 text-xs border border-zinc-200 outline-none focus:border-black" required 
+                            onChange={e => setNewProduct({...newProduct, slug: e.target.value})} value={newProduct.slug} />
+                    </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase">Precio (CLP)</label>
-                  <input type="number" placeholder="120000" className="w-full p-3 text-xs border border-zinc-200 outline-none" required 
-                    onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} />
+
+                {/* ÁREA DE SUBIDA DE IMÁGENES */}
+                <div className="space-y-4">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em]">Imágenes del Producto (Max 3)</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {newProduct.image_url.map((url, index) => (
+                      <div key={index} className="relative aspect-square border-2 border-dashed border-zinc-300 bg-white flex items-center justify-center overflow-hidden group">
+                        {url ? (
+                          <>
+                            <img src={url} alt="preview" className="w-full h-full object-cover" />
+                            <button 
+                              type="button" 
+                              onClick={() => removeImage(index)}
+                              className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity font-black text-[10px] uppercase italic"
+                            >
+                              Eliminar Foto
+                            </button>
+                          </>
+                        ) : (
+                          <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleUploadSuccess}>
+                            {({ open }) => (
+                              <button 
+                                type="button" 
+                                onClick={() => open()}
+                                className="w-full h-full flex flex-col items-center justify-center space-y-2 text-zinc-400 hover:text-black transition-colors"
+                              >
+                                <span className="text-2xl">+</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest">Subir Foto</span>
+                              </button>
+                            )}
+                          </CldUploadWidget>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase">Slug (Único)</label>
-                  <input type="text" placeholder="jordan-4-midnight" className="w-full p-3 text-xs border border-zinc-200 outline-none" required 
-                    onChange={e => setNewProduct({...newProduct, slug: e.target.value})} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase">Imagen 1</label>
-                  <input type="text" placeholder="URL Foto 1" className="w-full p-3 text-xs border border-zinc-200" required 
-                    onChange={e => updateImage(0, e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase">Imagen 2</label>
-                  <input type="text" placeholder="URL Foto 2" className="w-full p-3 text-xs border border-zinc-200"
-                    onChange={e => updateImage(1, e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase">Imagen 3</label>
-                  <input type="text" placeholder="URL Foto 3" className="w-full p-3 text-xs border border-zinc-200"
-                    onChange={e => updateImage(2, e.target.value)} />
-                </div>
-                <div className="lg:col-span-3">
-                  <button type="submit" className="w-full bg-black text-white font-black py-4 text-[10px] uppercase tracking-widest hover:bg-green-700 transition-all">
-                    GUARDAR PRODUCTO
-                  </button>
-                </div>
+
+                <button type="submit" className="w-full bg-black text-white font-black py-5 text-[10px] uppercase tracking-[0.3em] hover:bg-zinc-800 transition-all">
+                  Guardar Producto en Luxury RPK
+                </button>
               </form>
             )}
           </div>
@@ -192,9 +227,13 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
                   <div key={product.id} className="relative group">
                     <Link href={`/categoria/${product.category}/${product.subcategory}/${product.slug}`}>
                       <div className="aspect-square bg-zinc-50 overflow-hidden mb-4 border border-zinc-100">
-                        <img 
+                        {/* Usamos CldImage para optimizar la carga en la grilla */}
+                        <CldImage 
+                          width="400"
+                          height="400"
                           src={Array.isArray(product.image_url) ? product.image_url[0] : product.image_url} 
                           alt={product.name} 
+                          crop="fill"
                           className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" 
                         />
                       </div>

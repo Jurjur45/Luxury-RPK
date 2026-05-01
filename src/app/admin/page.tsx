@@ -1,19 +1,28 @@
 "use client";
-// ESTA ES LA LÍNEA QUE FALTA:
 import { useState } from 'react'; 
 import { CldUploadWidget } from 'next-cloudinary';
 import { supabase } from '@/lib/supabase';
+import BackButton from '@/components/BackButton';
 
 export default function AdminPanel() {
-  // Ahora estos estados funcionarán correctamente
   const [category, setCategory] = useState('ropa');
   const [subcategory, setSubcategory] = useState('poleras');
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [images, setImages] = useState<string[]>([]); // Array para múltiples fotos
 
-  const handleUploadSuccess = async (result: any) => {
+  const handleUploadSuccess = (result: any) => {
     const imageUrl = result.info.secure_url;
-    // Creamos un slug amigable para la URL (ej: "Polera Jordan" -> "polera-jordan")
+    if (images.length < 3) {
+      setImages(prev => [...prev, imageUrl]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (images.length === 0) return alert("Sube al menos una imagen");
+
+    // Slug automático
     const slug = name.toLowerCase().trim().replace(/\s+/g, '-');
 
     const { error } = await supabase
@@ -21,7 +30,7 @@ export default function AdminPanel() {
       .insert([{ 
         name, 
         price: Number(price), 
-        image_url: imageUrl, 
+        image_url: images, // Enviamos el array completo
         category, 
         subcategory,
         slug 
@@ -29,64 +38,99 @@ export default function AdminPanel() {
 
     if (!error) {
       alert('¡Producto Luxury RPK publicado con éxito!');
+      setImages([]); // Limpiamos para el siguiente
+      setName('');
+      setPrice('');
     } else {
-      console.error("Error al guardar:", error);
-      alert('Error al guardar en la base de datos.');
+      alert('Error: ' + error.message);
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto py-20 px-6">
-      <h1 className="text-3xl font-black mb-10 uppercase italic">Panel de Control Luxury RPK</h1>
+      <BackButton />
+      <h1 className="text-4xl font-black mb-10 uppercase italic tracking-tighter">
+        Luxury Admin Control
+      </h1>
       
-      <div className="space-y-4 mb-8">
-        <input 
-          type="text" 
-          placeholder="Nombre del producto" 
-          className="w-full p-4 border-2 border-black rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all"
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input 
-          type="number" 
-          placeholder="Precio (ej: 89990)" 
-          className="w-full p-4 border-2 border-black rounded-xl focus:ring-2 focus:ring-gray-200 outline-none transition-all"
-          onChange={(e) => setPrice(e.target.value)}
-        />
-        
-        <div className="grid grid-cols-2 gap-4">
-          <select 
-            className="w-full p-4 border-2 border-black rounded-xl bg-white"
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="ropa">Ropa</option>
-            <option value="calzado">Calzado</option>
-          </select>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-4">
+          <input 
+            type="text" 
+            placeholder="NOMBRE DEL PRODUCTO" 
+            value={name}
+            className="w-full p-4 border border-zinc-200 bg-zinc-50 font-bold outline-none focus:border-black transition-all uppercase text-xs tracking-widest"
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <input 
+            type="number" 
+            placeholder="PRECIO (CLP)" 
+            value={price}
+            className="w-full p-4 border border-zinc-200 bg-zinc-50 font-bold outline-none focus:border-black transition-all uppercase text-xs tracking-widest"
+            onChange={(e) => setPrice(e.target.value)}
+            required
+          />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <select 
+              className="w-full p-4 border border-zinc-200 bg-zinc-50 font-black uppercase text-[10px] tracking-widest outline-none"
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="ropa">Ropa</option>
+              <option value="calzado">Calzado</option>
+            </select>
 
-          <select 
-            className="w-full p-4 border-2 border-black rounded-xl bg-white"
-            onChange={(e) => setSubcategory(e.target.value)}
-          >
-            <option value="poleras">Poleras</option>
-            <option value="polerones">Polerones</option>
-            <option value="chaquetas">Chaquetas</option>
-            <option value="zapatillas">Zapatillas</option>
-          </select>
+            <select 
+              className="w-full p-4 border border-zinc-200 bg-zinc-50 font-black uppercase text-[10px] tracking-widest outline-none"
+              onChange={(e) => setSubcategory(e.target.value)}
+            >
+              <option value="poleras">Poleras</option>
+              <option value="polerones">Polerones</option>
+              <option value="chaquetas">Chaquetas</option>
+              <option value="zapatillas">Zapatillas</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      <CldUploadWidget 
-        uploadPreset="luxury_rpk_preset" 
-        onSuccess={handleUploadSuccess}
-      >
-        {({ open }) => (
-          <button 
-            onClick={() => open()}
-            className="w-full bg-black text-white py-5 rounded-2xl font-bold hover:bg-zinc-800 transition-colors shadow-lg"
-          >
-            Subir Imagen y Publicar
-          </button>
-        )}
-      </CldUploadWidget>
+        {/* PREVIEW DE IMÁGENES SUBIDAS */}
+        <div className="grid grid-cols-3 gap-4">
+          {images.map((url, i) => (
+            <div key={i} className="aspect-square border border-black relative">
+              <img src={url} className="w-full h-full object-cover" alt="Preview" />
+              <button 
+                type="button"
+                onClick={() => setImages(images.filter((_, index) => index !== i))}
+                className="absolute top-0 right-0 bg-black text-white p-1 text-[8px]"
+              >✕</button>
+            </div>
+          ))}
+          {images.length < 3 && (
+            <CldUploadWidget 
+              uploadPreset="luxuryrpk" // USA TU PRESET: luxuryrpk
+              onSuccess={handleUploadSuccess}
+            >
+              {({ open }) => (
+                <button 
+                  type="button"
+                  onClick={() => open()}
+                  className="aspect-square border-2 border-dashed border-zinc-300 flex flex-col items-center justify-center text-[9px] font-black text-zinc-400 hover:border-black hover:text-black transition-all uppercase"
+                >
+                  <span>+ Agregar</span>
+                  <span>Foto {images.length + 1}</span>
+                </button>
+              )}
+            </CldUploadWidget>
+          )}
+        </div>
+
+        <button 
+          type="submit"
+          className="w-full bg-black text-white py-5 font-black uppercase italic tracking-[0.3em] hover:bg-zinc-800 transition-all shadow-xl"
+        >
+          Publicar en Luxury RPK
+        </button>
+      </form>
     </div>
   );
 }
