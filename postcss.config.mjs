@@ -1,15 +1,8 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  typescript: {
-    // !! ADVERTENCIA !!
-    // Esto permite que los builds de producción finalicen con éxito 
-    // incluso si tu proyecto tiene errores de TypeScript.
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    // También ignoramos ESLint para evitar que se detenga por advertencias de formato
-    ignoreDuringBuilds: true,
+/** @type {import('postcss-load-config').Config} */
+const config = {
+  plugins: {
+    tailwindcss: {},
   },
 };
 
-export default nextConfig;
+export default config;
