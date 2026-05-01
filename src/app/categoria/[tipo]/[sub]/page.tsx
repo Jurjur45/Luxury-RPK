@@ -226,16 +226,39 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
                 {groupedProducts[modelName].map((product: Product) => (
                   <div key={product.id} className="relative group">
                     <Link href={`/categoria/${product.category}/${product.subcategory}/${product.slug}`}>
-                      <div className="aspect-square bg-zinc-50 overflow-hidden mb-4 border border-zinc-100">
-                        {/* Usamos CldImage para optimizar la carga en la grilla */}
-                        <CldImage 
-                          width="400"
-                          height="400"
-                          src={Array.isArray(product.image_url) ? product.image_url[0] : product.image_url} 
-                          alt={product.name} 
-                          crop="fill"
-                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" 
-                        />
+                      <div className="aspect-square bg-zinc-50 overflow-hidden">
+                        {(() => {
+                          // 1. Extraemos a una variable local para facilitar la inferencia
+                          const imgs = product.image_url;
+                          
+                          // 2. Verificamos si es un array con contenido o un string con contenido
+                          const hasValidContent = Array.isArray(imgs) 
+                            ? (imgs.length > 0 && typeof imgs[0] === 'string' && imgs[0].trim() !== "")
+                            : (typeof imgs === 'string' && (imgs as string).trim() !== "");
+
+                          if (hasValidContent) {
+                            // 3. Obtenemos el valor final forzando el tipo para evitar el error de 'never'
+                            const displaySrc = Array.isArray(imgs) ? imgs[0] : (imgs as string);
+
+                            return (
+                              <CldImage
+                                width="400"
+                                height="400"
+                                src={displaySrc}
+                                alt={product.name}
+                                className="object-cover w-full h-full"
+                              />
+                            );
+                          }
+
+                          // 4. Fallback si no hay imagen válida
+                          return (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
+                              <span className="text-xl mb-1">✕</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest">Sin Foto</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <h3 className="text-sm font-bold uppercase tracking-tight">{product.name}</h3>
                       <p className="text-sm font-medium italic text-zinc-500 mt-1">

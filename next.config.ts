@@ -1,14 +1,20 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  typescript: {
-    // Esto asegura que el build termine aunque TypeScript se ponga pesado
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   images: {
-    domains: ['res.cloudinary.com'], // Necesario para que carguen las fotos de Luxury RPK
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+    ],
+  },
+  // Si Next 16 se queja de 'typescript' o 'eslint' dentro del objeto,
+  // los manejaremos a través de banderas de compilación si es necesario,
+  // pero prueba primero con el objeto limpio:
+  typescript: {
+    ignoreBuildErrors: true,
   },
 };
 

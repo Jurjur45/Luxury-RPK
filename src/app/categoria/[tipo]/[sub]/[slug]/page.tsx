@@ -52,30 +52,40 @@ export default function ProductDetailPage({ params: paramsPromise }: { params: P
           
           {/* GALERÍA DE IMÁGENES OPTIMIZADA */}
           <div className="space-y-4">
-            {Array.isArray(product.image_url) ? (
-              product.image_url.map((img: string, idx: number) => (
-                <CldImage 
-                  key={idx}
-                  width="800" // Definimos un tamaño base para optimización
-                  height="1000"
-                  src={img} 
-                  alt={product.name}
-                  crop="fill"
-                  gravity="center"
-                  className="w-full bg-zinc-50 border border-zinc-100 object-cover"
-                />
-              ))
-            ) : (
-              <CldImage 
-                width="800"
-                height="1000"
-                src={product.image_url} 
-                alt={product.name}
-                crop="fill"
-                gravity="center"
-                className="w-full bg-zinc-50 border border-zinc-100 object-cover"
-              />
-            )}
+            {(() => {
+              // 1. Normalizamos a un array de strings
+              const imagesArray: string[] = Array.isArray(product.image_url) 
+                ? product.image_url 
+                : [product.image_url];
+
+              // 2. Filtramos (especificamos que 'img' es string)
+              const validImages = imagesArray.filter((img: string) => 
+                typeof img === 'string' && img.trim() !== ""
+              );
+
+              // 3. Mapeamos para el renderizado
+              if (validImages.length > 0) {
+                return validImages.map((img: string, idx: number) => (
+                  <CldImage 
+                    key={idx}
+                    width="800"
+                    height="1000"
+                    src={img} 
+                    alt={`${product.name} - Vista ${idx + 1}`}
+                    crop="fill"
+                    gravity="center"
+                    className="w-full bg-zinc-50 border border-zinc-100 object-cover"
+                  />
+                ));
+              }
+
+              return (
+                <div className="w-full aspect-[4/5] bg-zinc-100 flex flex-col items-center justify-center text-zinc-400">
+                  <span className="text-4xl mb-2">✕</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em]">Sin imágenes disponibles</span>
+                </div>
+              );
+            })()}
           </div>
 
           {/* INFO DEL PRODUCTO */}
