@@ -65,27 +65,42 @@ export default function Home() {
           ))}
         </div>
 
-        {/* ENTREGA INMEDIATA */}
-        <section>
-          <h2 className="text-4xl font-black uppercase italic tracking-tighter mb-12">Entrega Inmediata</h2>
+        {/* 3. SECCIÓN: ENTREGA INMEDIATA (Página Principal) */}
+        <section className="max-w-7xl mx-auto px-6 mb-32">
+          <h2 className="text-5xl font-black uppercase italic tracking-tighter text-black mb-12">
+            Entrega Inmediata
+          </h2>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {products.map((p) => (
-              <div key={p.id} className="group">
-                <div className="aspect-[3/4] bg-zinc-100 mb-4 overflow-hidden border border-zinc-100">
-                  {p.image_url?.[0] && (
+            {!loading && products.map((product) => (
+              <Link 
+                key={product.id} 
+                // IMPORTANTE: Construimos la ruta completa usando los datos de la DB
+                href={`/categoria/${product.category}/${product.subcategory}/${product.slug}`} 
+                className="group"
+              >
+                <div className="aspect-[3/4] bg-zinc-100 overflow-hidden mb-6 relative border border-zinc-100">
+                  <div className="absolute top-4 left-4 z-10 bg-black text-white text-[8px] font-black px-3 py-1.5 uppercase tracking-widest italic">
+                    Ready to Ship
+                  </div>
+                  {product.image_url?.[0] && (
                     <CldImage 
-                      src={p.image_url[0]} 
-                      width="400" 
-                      height="533" 
-                      alt={p.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700" 
+                      src={product.image_url[0]} 
+                      width={500} 
+                      height={667} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                     />
                   )}
                 </div>
-                <h3 className="font-bold uppercase text-sm italic">{p.name}</h3>
-                <p className="text-zinc-500 text-sm">${Number(p.price).toLocaleString('es-CL')}</p>
-              </div>
+                <h3 className="font-black uppercase text-sm italic tracking-tight">{product.name}</h3>
+                <p className="text-zinc-500 text-sm font-medium mt-1">
+                  ${Number(product.price).toLocaleString('es-CL')}
+                </p>
+              </Link>
             ))}
+            
+            {/* ... botón de ver todo ... */}
           </div>
         </section>
       </main>
