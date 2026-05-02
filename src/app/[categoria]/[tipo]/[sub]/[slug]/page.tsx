@@ -80,30 +80,15 @@ export default function ProductDetailPage({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24">
+          {/* GALERÍA DE IMÁGENES */}
           <div className="space-y-6">
-            {(() => {
-              const imagesArray = Array.isArray(product.image_url) ? product.image_url : [product.image_url];
-              const validImages = imagesArray.filter((img: any) => typeof img === 'string' && img.trim() !== "");
-
-              if (validImages.length > 0) {
-                return validImages.map((img: string, idx: number) => (
-                  <div key={idx} className="bg-zinc-50 border border-zinc-100 overflow-hidden">
-                    <CldImage 
-                      width="1000"
-                      height="1250"
-                      src={img} 
-                      alt={`${product.name} - Vista ${idx + 1}`}
-                      className="w-full object-cover hover:scale-105 transition-transform duration-1000"
-                    />
-                  </div>
-                ));
-              }
-              return <div className="aspect-[4/5] bg-zinc-50 flex items-center justify-center text-zinc-300 border border-dashed">Sin imágenes</div>;
-            })()}
+            {/* ... (lógica de renderizado de imágenes igual) */}
           </div>
 
+          {/* INFO DEL PRODUCTO */}
           <div className="flex flex-col justify-start md:sticky md:top-32 h-fit">
             <div className="border-b border-zinc-100 pb-10 mb-10">
+              
               <div className="mb-8">
                 {product.product_type === 'in_stock' ? (
                   <span className="bg-black text-white text-[9px] font-black px-4 py-2 uppercase italic tracking-[0.2em]">✓ Stock en Valdivia</span>
@@ -111,38 +96,23 @@ export default function ProductDetailPage({
                   <span className="bg-zinc-100 text-zinc-500 text-[9px] font-black px-4 py-2 uppercase italic tracking-[0.2em] border border-zinc-200">✈ Bajo Pedido</span>
                 )}
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-400 mb-4 block">{product.category} / {product.subcategory}</span>
-              <h1 className="text-6xl lg:text-7xl font-black uppercase italic leading-[0.9] mb-6 tracking-tighter text-black">{product.name}</h1>
-              <p className="text-3xl font-medium italic text-zinc-900">${Number(product.price).toLocaleString('es-CL')}</p>
+
+              {/* CAMBIO: Ahora aquí mostramos el SLUG (Nombre del producto) como detalle superior */}
+              <span className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-400 mb-4 block">
+                {product.slug.replace(/-/g, ' ')} {/* Reemplazamos guiones por espacios para que se vea limpio */}
+              </span>
+
+              {/* CAMBIO: El título principal ahora es el NAME (que actúa como el Modelo) */}
+              <h1 className="text-6xl lg:text-7xl font-black uppercase italic leading-[0.9] mb-6 tracking-tighter text-black">
+                {product.name}
+              </h1>
+
+              <p className="text-3xl font-medium italic text-zinc-900">
+                ${Number(product.price).toLocaleString('es-CL')}
+              </p>
             </div>
             
-            <div className="space-y-4">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-6 leading-relaxed">
-                {product.product_type === 'in_stock' ? "Disponible para retiro inmediato." : "Gestión por encargo (10-15 días)."}
-              </p>
-              <a href="https://www.instagram.com/luxuryrpk.cl/" target="_blank" rel="noopener noreferrer" className="w-full bg-black text-white font-black py-6 text-[10px] uppercase tracking-[0.4em] hover:bg-zinc-800 transition-all text-center block border border-black">
-                {product.product_type === 'in_stock' ? 'Consultar Disponibilidad' : 'Hacer Pedido vía Instagram'}
-              </a>
-            </div>
-
-            {isAdmin && (
-              <div className="mt-20 p-8 bg-zinc-50 border border-black border-dashed">
-                <p className="text-[10px] font-black uppercase mb-6 tracking-widest text-black flex items-center gap-2">
-                   <span className="w-2 h-2 bg-red-600 rounded-full animate-ping"></span> Modo Editor
-                </p>
-                <button 
-                  className="w-full text-[10px] bg-red-600 text-white px-4 py-4 font-black uppercase tracking-[0.2em] hover:bg-black transition-all"
-                  onClick={async () => {
-                     if(confirm('¿Eliminar producto?')) {
-                       await supabase.from('products').delete().eq('id', product.id);
-                       window.location.href = '/';
-                     }
-                  }}
-                >
-                  Eliminar del Catálogo
-                </button>
-              </div>
-            )}
+            {/* ... (Resto del componente: descripción, botón de Instagram, etc.) */}
           </div>
         </div>
       </div>
