@@ -78,7 +78,7 @@ export default function AdminPanel() {
               onChange={(e) => setCategory(e.target.value)}
             >
               <option value="ropa">Ropa</option>
-              <option value="calzado">Calzado</option>
+              <option value="Zapatillas">Zapatillas</option>
             </select>
 
             <select 

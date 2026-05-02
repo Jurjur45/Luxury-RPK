@@ -57,7 +57,7 @@ export default function Home() {
                   {cat.nombre}
                 </h2>
                 <span className="text-[10px] font-bold tracking-[0.3em] uppercase mt-2 border-b border-white/40 pb-1">
-                  Ver {cat.nombre === 'Calzado' ? 'Sneakers' : 'Colección'}
+                  Ver {cat.nombre === 'Zapatillas' ? 'Sneakers' : 'Colección'}
                 </span>
               </div>
               <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors" />
