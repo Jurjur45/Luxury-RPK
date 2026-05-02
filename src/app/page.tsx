@@ -25,7 +25,7 @@ export default function Home() {
   // Definimos las rutas exactas para que no mande a "/todos"
   const categorias = [
     { nombre: 'Ropa', slug: 'ropa', sub: 'poleras' },
-    { nombre: 'Calzado', slug: 'calzado', sub: 'zapatillas' },
+    { nombre: 'Zapatillas', slug: 'calzado', sub: 'zapatillas' },
     { nombre: 'Accesorios', slug: 'accesorios', sub: 'bolsos' }
   ];
 
