@@ -82,7 +82,37 @@ export default function ProductDetailPage({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24">
           {/* GALERÍA DE IMÁGENES */}
           <div className="space-y-6">
-            {/* ... (lógica de renderizado de imágenes igual) */}
+            {product.image_url && product.image_url.length > 0 ? (
+              product.image_url.map((url: string, index: number) => {
+                // Si la URL es completa (empieza con http), CldImage puede fallar 
+                // si no está configurado el loader. Usamos <img> para asegurar.
+                const isFullUrl = url.startsWith('http');
+
+                return (
+                  <div key={index} className="aspect-square bg-zinc-50 border border-zinc-100 overflow-hidden">
+                    {isFullUrl ? (
+                      <img 
+                        src={url} 
+                        alt={`${product.name} - ${index}`}
+                        className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                      />
+                    ) : (
+                      <CldImage
+                        width="1000"
+                        height="1000"
+                        src={url}
+                        alt={`${product.name} - ${index}`}
+                        className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                      />
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="aspect-square bg-zinc-50 flex items-center justify-center text-zinc-300 text-[10px] font-black uppercase">
+                Sin Imágenes Disponibles
+              </div>
+            )}
           </div>
 
           {/* INFO DEL PRODUCTO */}
