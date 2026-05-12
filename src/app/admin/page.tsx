@@ -4,8 +4,9 @@ import { CldUploadWidget } from 'next-cloudinary';
 import { supabase } from '@/lib/supabase';
 import BackButton from '@/components/BackButton';
 
+// Eliminamos 'comment' de los tipos
 type Product = { id: string; name: string; image_url: string[]; category: string; subcategory: string; price: number };
-type Feedback = { id: string; rating: number | null; comment: string | null; image_url: string | null; is_approved: boolean; product_id: string | null };
+type Feedback = { id: string; rating: number | null; image_url: string | null; is_approved: boolean; product_id: string | null };
 
 export default function AdminPanel() {
   const [category, setCategory] = useState('ropa');
@@ -18,7 +19,6 @@ export default function AdminPanel() {
 
   const [productId, setProductId] = useState('');
   const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
   const [feedbackImage, setFeedbackImage] = useState('');
   
   const [heroTitle, setHeroTitle] = useState('');
@@ -30,9 +30,10 @@ export default function AdminPanel() {
   useEffect(() => { loadAdminData(); }, []);
 
   const loadAdminData = async () => {
+    // Ya no pedimos 'comment' en la select
     const [{ data: productsData }, { data: feedbackData }, { data: contentData }] = await Promise.all([
       supabase.from('products').select('id,name,image_url,category,subcategory,price').order('created_at', { ascending: false }),
-      supabase.from('feedbacks').select('id,rating,comment,image_url,is_approved,product_id').order('created_at', { ascending: false }),
+      supabase.from('feedbacks').select('id,rating,image_url,is_approved,product_id').order('created_at', { ascending: false }),
       supabase.from('site_content').select('key,value').in('key', ['hero_title', 'hero_subtitle', 'header_banner', 'img_cat_ropa', 'img_cat_zapatillas']),
     ]);
 
@@ -74,43 +75,48 @@ export default function AdminPanel() {
   const addFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validamos que haya al menos un comentario o una imagen
-    if (!comment && !feedbackImage) {
-      alert("Debes agregar al menos un comentario o una imagen para el feedback");
+    if (!feedbackImage) {
+      alert("Debes subir una captura de pantalla para el feedback");
       return;
     }
 
-    // Preparamos el objeto asegurando que el ID sea null si es "Tienda General"
+    // Enviamos solo columnas que existen: rating, image_url, is_approved, product_id
     const feedbackData = { 
       product_id: productId && productId !== "" ? productId : null, 
       rating: Number(rating), 
-      comment: comment.trim(), 
-      image_url: feedbackImage || null, 
+      image_url: feedbackImage, 
       is_approved: true 
     };
 
-    const { error } = await supabase
-      .from('feedbacks')
-      .insert([feedbackData]);
+    const { error } = await supabase.from('feedbacks').insert([feedbackData]);
 
     if (error) {
-      console.error("Error al subir feedback:", error.message);
       alert("Error de Supabase: " + error.message);
     } else {
-      alert("¡Feedback subido con éxito!");
-      // Limpiamos todo
-      setComment('');
       setFeedbackImage('');
-      setRating(5);
       loadAdminData(); 
+      alert("Feedback visual guardado con éxito");
     }
   };
 
-  const deleteFeedback = async (id: string) => { await supabase.from('feedbacks').delete().eq('id', id); loadAdminData(); };
-  const toggleApproval = async (id: string, value: boolean) => { await supabase.from('feedbacks').update({ is_approved: !value }).eq('id', id); loadAdminData(); };
+  const deleteFeedback = async (id: string) => { 
+    if(confirm("¿Seguro que quieres borrar este feedback?")) {
+      const { error } = await supabase.from('feedbacks').delete().eq('id', id); 
+      if (!error) loadAdminData();
+      else alert("Error al borrar: " + error.message);
+    }
+  };
+
+  const toggleApproval = async (id: string, value: boolean) => { 
+    const { error } = await supabase.from('feedbacks').update({ is_approved: !value }).eq('id', id); 
+    if (!error) loadAdminData();
+  };
+
   const deleteProduct = async (product: Product) => {
-    await supabase.from('products').delete().eq('id', product.id);
-    loadAdminData();
+    if(confirm(`¿Borrar ${product.name}?`)) {
+      await supabase.from('products').delete().eq('id', product.id);
+      loadAdminData();
+    }
   };
 
   return (
@@ -120,7 +126,7 @@ export default function AdminPanel() {
       
       {/* 1. CONFIGURACIÓN VISUAL */}
       <section className="bg-white border rounded-2xl p-6 shadow-sm space-y-6">
-        <h2 className="font-black text-2xl uppercase italic">Diseño Home & Hero</h2>
+        <h2 className="font-black text-2xl uppercase italic text-black">Diseño Home & Hero</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input className="w-full p-3 border font-bold text-sm" value={headerBanner} onChange={(e) => setHeaderBanner(e.target.value)} placeholder="Banner superior" />
           <input className="w-full p-3 border font-bold text-sm" value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="Título principal (Hero)" />
@@ -132,10 +138,10 @@ export default function AdminPanel() {
       <div className="grid lg:grid-cols-2 gap-12">
         {/* 2. AGREGAR PRODUCTO */}
         <section className="bg-white border rounded-2xl p-6 shadow-sm space-y-6">
-          <h2 className="font-black text-2xl uppercase italic">Nuevo Producto</h2>
+          <h2 className="font-black text-2xl uppercase italic text-black">Nuevo Producto</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input type="text" placeholder="Nombre" value={name} className="w-full p-3 border text-sm" onChange={(e) => setName(e.target.value)} required />
-            <input type="number" placeholder="Precio" value={price} className="w-full p-3 border text-sm" onChange={(e) => setPrice(e.target.value)} required />
+            <input type="text" placeholder="Nombre" value={name} className="w-full p-3 border text-sm font-bold" onChange={(e) => setName(e.target.value)} required />
+            <input type="number" placeholder="Precio" value={price} className="w-full p-3 border text-sm font-bold" onChange={(e) => setPrice(e.target.value)} required />
             <div className="grid grid-cols-2 gap-4">
               <select className="w-full p-3 border uppercase font-bold text-[10px]" value={category} onChange={(e) => setCategory(e.target.value)}>
                 <option value="ropa">Ropa</option>
@@ -150,7 +156,7 @@ export default function AdminPanel() {
               {images.map((url, i) => <img key={i} src={url} className="aspect-square object-cover border rounded" />)}
               {images.length < 3 && (
                 <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleUploadSuccess}>
-                  {({ open }) => <button type="button" onClick={() => open()} className="aspect-square border-2 border-dashed flex items-center justify-center text-zinc-400 font-black text-[10px]">+ FOTO</button>}
+                  {({ open }) => <button type="button" onClick={() => open()} className="aspect-square border-2 border-dashed flex items-center justify-center text-zinc-400 font-black text-[10px] hover:border-black hover:text-black transition-all">+ FOTO</button>}
                 </CldUploadWidget>
               )}
             </div>
@@ -158,43 +164,46 @@ export default function AdminPanel() {
           </form>
         </section>
 
-        {/* 3. TESTIMONIOS (FEEDBACK) */}
+        {/* 3. TESTIMONIOS (FEEDBACK) - Sin Comentarios */}
         <section className="bg-white border rounded-2xl p-6 shadow-sm space-y-6">
-          <h2 className="font-black text-2xl uppercase italic">Gestionar Reseñas</h2>
+          <h2 className="font-black text-2xl uppercase italic text-black">Gestionar Reseñas</h2>
           <form onSubmit={addFeedback} className="space-y-4">
+            <label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest">Vincular a Producto</label>
             <select className="w-full p-3 border text-[10px] font-black uppercase" value={productId} onChange={(e) => setProductId(e.target.value)}>
               <option value="">Tienda General</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <textarea value={comment} onChange={(e) => setComment(e.target.value)} className="w-full p-3 border text-sm min-h-[80px]" placeholder="Comentario del cliente..." />
             
             <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleFeedbackUploadSuccess}>
               {({ open }) => (
                 <button 
                   type="button" 
                   onClick={() => open()} 
-                  className={`w-full border-2 border-dashed p-3 text-[10px] font-black uppercase transition-all ${
-                    feedbackImage ? "border-green-500 text-green-600 bg-green-50" : "border-zinc-200 text-zinc-500"
+                  className={`w-full border-2 border-dashed p-6 text-[10px] font-black uppercase transition-all ${
+                    feedbackImage ? "border-green-500 text-green-600 bg-green-50" : "border-zinc-200 text-zinc-400 hover:border-black hover:text-black"
                   }`}
                 >
-                  {feedbackImage ? "✓ Imagen Cargada Correctamente" : "+ Subir Captura (WhatsApp/Instagram)"}
+                  {feedbackImage ? "✓ Captura Cargada" : "+ Subir Captura de Pantalla"}
                 </button>
               )}
             </CldUploadWidget>
-            <button type="submit" className="w-full bg-zinc-900 text-white py-4 font-black uppercase italic tracking-widest text-xs">Guardar Reseña</button>
+            <button type="submit" className="w-full bg-zinc-900 text-white py-4 font-black uppercase italic tracking-widest text-xs">Guardar Feedback</button>
           </form>
 
-          <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
+          {/* Galería de Feedbacks para borrar */}
+          <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2">
             {feedbacks.map((f) => (
-              <div key={f.id} className="flex items-center justify-between p-3 border rounded bg-zinc-50">
-                <div className="flex items-center gap-3">
-                  {f.image_url && <img src={f.image_url} className="w-8 h-8 object-cover rounded" />}
-                  <p className="text-[10px] font-bold italic truncate max-w-[120px]">{f.comment}</p>
+              <div key={f.id} className="relative group border rounded-xl overflow-hidden bg-zinc-100">
+                {f.image_url && <img src={f.image_url} className="w-full aspect-square object-cover" />}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2">
+                  <button onClick={() => toggleApproval(f.id, f.is_approved)} className="bg-white text-black text-[7px] font-black px-3 py-2 uppercase">
+                    {f.is_approved ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                  <button onClick={() => deleteFeedback(f.id)} className="bg-red-600 text-white text-[7px] font-black px-3 py-2 uppercase">
+                    Eliminar
+                  </button>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => toggleApproval(f.id, f.is_approved)} className="text-[8px] font-black uppercase px-2 py-1 bg-white border">{f.is_approved ? 'Ocultar' : 'Ver'}</button>
-                  <button onClick={() => deleteFeedback(f.id)} className="text-[8px] font-black uppercase px-2 py-1 bg-red-50 text-red-600 border border-red-100">X</button>
-                </div>
+                {!f.is_approved && <div className="absolute top-2 left-2 bg-yellow-400 text-black text-[7px] font-black px-2 py-1 uppercase italic">Oculto</div>}
               </div>
             ))}
           </div>
@@ -203,7 +212,7 @@ export default function AdminPanel() {
 
       {/* 4. LISTA DE PRODUCTOS */}
       <section className="bg-white border rounded-2xl p-6 shadow-sm">
-        <h2 className="font-black text-2xl mb-6 uppercase italic">Inventario Actual</h2>
+        <h2 className="font-black text-2xl mb-6 uppercase italic text-black">Inventario Actual</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map((p) => (
             <div key={p.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-zinc-50 transition-colors">
@@ -214,7 +223,7 @@ export default function AdminPanel() {
                   <p className="text-[9px] text-zinc-400 uppercase font-bold">${p.price.toLocaleString('es-CL')}</p>
                 </div>
               </div>
-              <button onClick={() => deleteProduct(p)} className="text-[8px] font-black uppercase bg-red-50 text-red-600 px-3 py-2 rounded-lg border border-red-100">Eliminar</button>
+              <button onClick={() => deleteProduct(p)} className="text-[8px] font-black uppercase bg-red-50 text-red-600 px-3 py-2 rounded-lg border border-red-100 hover:bg-red-600 hover:text-white transition-all">Eliminar</button>
             </div>
           ))}
         </div>
