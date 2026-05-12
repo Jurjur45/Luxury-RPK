@@ -4,7 +4,6 @@ import { CldUploadWidget } from 'next-cloudinary';
 import { supabase } from '@/lib/supabase';
 import BackButton from '@/components/BackButton';
 
-// Eliminamos 'comment' de los tipos
 type Product = { id: string; name: string; image_url: string[]; category: string; subcategory: string; price: number };
 type Feedback = { id: string; rating: number | null; image_url: string | null; is_approved: boolean; product_id: string | null };
 
@@ -16,6 +15,7 @@ export default function AdminPanel() {
   const [images, setImages] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const [productId, setProductId] = useState('');
   const [rating, setRating] = useState(5);
@@ -24,17 +24,14 @@ export default function AdminPanel() {
   const [heroTitle, setHeroTitle] = useState('');
   const [heroSubtitle, setHeroSubtitle] = useState('');
   const [headerBanner, setHeaderBanner] = useState('');
-  const [imgCatRopa, setImgCatRopa] = useState('');
-  const [imgCatZapatillas, setImgCatZapatillas] = useState('');
 
   useEffect(() => { loadAdminData(); }, []);
 
   const loadAdminData = async () => {
-    // Ya no pedimos 'comment' en la select
     const [{ data: productsData }, { data: feedbackData }, { data: contentData }] = await Promise.all([
       supabase.from('products').select('id,name,image_url,category,subcategory,price').order('created_at', { ascending: false }),
       supabase.from('feedbacks').select('id,rating,image_url,is_approved,product_id').order('created_at', { ascending: false }),
-      supabase.from('site_content').select('key,value').in('key', ['hero_title', 'hero_subtitle', 'header_banner', 'img_cat_ropa', 'img_cat_zapatillas']),
+      supabase.from('site_content').select('key,value').in('key', ['hero_title', 'hero_subtitle', 'header_banner']),
     ]);
 
     setProducts((productsData || []) as Product[]);
@@ -45,8 +42,6 @@ export default function AdminPanel() {
       setHeroTitle(contentData.find((c: any) => c.key === 'hero_title')?.value || '');
       setHeroSubtitle(contentData.find((c: any) => c.key === 'hero_subtitle')?.value || '');
       setHeaderBanner(contentData.find((c: any) => c.key === 'header_banner')?.value || '');
-      setImgCatRopa(contentData.find((c: any) => c.key === 'img_cat_ropa')?.value || '');
-      setImgCatZapatillas(contentData.find((c: any) => c.key === 'img_cat_zapatillas')?.value || '');
     }
   };
 
@@ -55,8 +50,6 @@ export default function AdminPanel() {
       { key: 'hero_title', value: heroTitle },
       { key: 'hero_subtitle', value: heroSubtitle },
       { key: 'header_banner', value: headerBanner },
-      { key: 'img_cat_ropa', value: imgCatRopa },
-      { key: 'img_cat_zapatillas', value: imgCatZapatillas },
     ];
     const { error } = await supabase.from('site_content').upsert(payload, { onConflict: 'key' });
     alert(error ? error.message : 'Configuración guardada');
@@ -67,54 +60,71 @@ export default function AdminPanel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     const slug = name.toLowerCase().trim().replace(/\s+/g, '-');
     const { error } = await supabase.from('products').insert([{ name, price: Number(price), image_url: images, category, subcategory, slug }]);
     if (!error) { setImages([]); setName(''); setPrice(''); loadAdminData(); }
+    setLoading(false);
   };
 
   const addFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!feedbackImage) {
-      alert("Debes subir una captura de pantalla para el feedback");
-      return;
-    }
-
-    // Enviamos solo columnas que existen: rating, image_url, is_approved, product_id
+    if (!feedbackImage) { alert("Sube una captura primero"); return; }
     const feedbackData = { 
       product_id: productId && productId !== "" ? productId : null, 
       rating: Number(rating), 
       image_url: feedbackImage, 
       is_approved: true 
     };
-
     const { error } = await supabase.from('feedbacks').insert([feedbackData]);
-
-    if (error) {
-      alert("Error de Supabase: " + error.message);
-    } else {
-      setFeedbackImage('');
-      loadAdminData(); 
-      alert("Feedback visual guardado con éxito");
-    }
+    if (!error) { setFeedbackImage(''); loadAdminData(); alert("Feedback visual guardado"); }
   };
 
-  const deleteFeedback = async (id: string) => { 
-    if(confirm("¿Seguro que quieres borrar este feedback?")) {
-      const { error } = await supabase.from('feedbacks').delete().eq('id', id); 
-      if (!error) loadAdminData();
-      else alert("Error al borrar: " + error.message);
+  const deleteFeedback = async (id: string, imageUrl: string | null) => { 
+    if(confirm("¿Seguro que quieres borrar este feedback? Se eliminará la imagen de la nube.")) {
+      try {
+        if (imageUrl) {
+          await fetch('/api/delete-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrls: [imageUrl] }),
+          });
+        }
+        const { error } = await supabase.from('feedbacks').delete().match({ id }); 
+        if (!error) {
+          setFeedbacks(prev => prev.filter(f => f.id !== id));
+        }
+      } catch (err) {
+        console.error("Error al borrar feedback:", err);
+      }
     }
-  };
-
-  const toggleApproval = async (id: string, value: boolean) => { 
-    const { error } = await supabase.from('feedbacks').update({ is_approved: !value }).eq('id', id); 
-    if (!error) loadAdminData();
   };
 
   const deleteProduct = async (product: Product) => {
-    if(confirm(`¿Borrar ${product.name}?`)) {
-      await supabase.from('products').delete().eq('id', product.id);
+    if (confirm(`¿Borrar ${product.name}? Esto también eliminará las fotos de la nube.`)) {
+      try {
+        const res = await fetch('/api/delete-images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrls: product.image_url }),
+        });
+
+        if (!res.ok) console.warn("No se pudieron borrar algunas imágenes de Cloudinary, pero borraremos el registro.");
+
+        const { error } = await supabase.from('products').delete().eq('id', product.id);
+        if (error) throw error;
+
+        loadAdminData();
+      } catch (err: any) {
+        alert("Error: " + err.message);
+      }
+    }
+  };
+
+  const editFeedbackProduct = async (id: string) => {
+    const newProductId = prompt("Nuevo ID del producto (vacío para General):");
+    if (newProductId !== null) {
+      await supabase.from('feedbacks').update({ product_id: newProductId === "" ? null : newProductId }).eq('id', id);
       loadAdminData();
     }
   };
@@ -132,7 +142,7 @@ export default function AdminPanel() {
           <input className="w-full p-3 border font-bold text-sm" value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="Título principal (Hero)" />
           <input className="w-full p-3 border font-bold text-sm md:col-span-2" value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} placeholder="Subtítulo Hero" />
         </div>
-        <button onClick={saveSiteContent} className="bg-black text-white px-8 py-3 font-black uppercase italic text-[10px] tracking-widest">Actualizar Home</button>
+        <button onClick={saveSiteContent} className="bg-black text-white px-8 py-3 font-black uppercase italic text-[10px] tracking-widest hover:bg-zinc-800 transition-all">Actualizar Home</button>
       </section>
 
       <div className="grid lg:grid-cols-2 gap-12">
@@ -153,18 +163,20 @@ export default function AdminPanel() {
               </select>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {images.map((url, i) => <img key={i} src={url} className="aspect-square object-cover border rounded" />)}
+              {images.map((url, i) => <img key={i} src={url} className="aspect-square object-cover border rounded" alt="preview" />)}
               {images.length < 3 && (
                 <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleUploadSuccess}>
                   {({ open }) => <button type="button" onClick={() => open()} className="aspect-square border-2 border-dashed flex items-center justify-center text-zinc-400 font-black text-[10px] hover:border-black hover:text-black transition-all">+ FOTO</button>}
                 </CldUploadWidget>
               )}
             </div>
-            <button type="submit" className="w-full bg-black text-white py-4 font-black uppercase italic tracking-widest text-xs">Publicar Producto</button>
+            <button type="submit" disabled={loading} className="w-full bg-black text-white py-4 font-black uppercase italic tracking-widest text-xs disabled:bg-zinc-400">
+              {loading ? "Publicando..." : "Publicar Producto"}
+            </button>
           </form>
         </section>
 
-        {/* 3. TESTIMONIOS (FEEDBACK) - Sin Comentarios */}
+        {/* 3. GESTIONAR RESEÑAS */}
         <section className="bg-white border rounded-2xl p-6 shadow-sm space-y-6">
           <h2 className="font-black text-2xl uppercase italic text-black">Gestionar Reseñas</h2>
           <form onSubmit={addFeedback} className="space-y-4">
@@ -176,41 +188,29 @@ export default function AdminPanel() {
             
             <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleFeedbackUploadSuccess}>
               {({ open }) => (
-                <button 
-                  type="button" 
-                  onClick={() => open()} 
-                  className={`w-full border-2 border-dashed p-6 text-[10px] font-black uppercase transition-all ${
-                    feedbackImage ? "border-green-500 text-green-600 bg-green-50" : "border-zinc-200 text-zinc-400 hover:border-black hover:text-black"
-                  }`}
-                >
-                  {feedbackImage ? "✓ Captura Cargada" : "+ Subir Captura de Pantalla"}
+                <button type="button" onClick={() => open()} className={`w-full border-2 border-dashed p-6 text-[10px] font-black uppercase transition-all ${feedbackImage ? "border-green-500 text-green-600 bg-green-50" : "border-zinc-200 text-zinc-400"}`}>
+                  {feedbackImage ? "✓ Captura Cargada" : "+ Subir Captura"}
                 </button>
               )}
             </CldUploadWidget>
             <button type="submit" className="w-full bg-zinc-900 text-white py-4 font-black uppercase italic tracking-widest text-xs">Guardar Feedback</button>
           </form>
 
-          {/* Galería de Feedbacks para borrar */}
-          <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2">
+          <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2">
             {feedbacks.map((f) => (
-              <div key={f.id} className="relative group border rounded-xl overflow-hidden bg-zinc-100">
-                {f.image_url && <img src={f.image_url} className="w-full aspect-square object-cover" />}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2">
-                  <button onClick={() => toggleApproval(f.id, f.is_approved)} className="bg-white text-black text-[7px] font-black px-3 py-2 uppercase">
-                    {f.is_approved ? 'Ocultar' : 'Mostrar'}
-                  </button>
-                  <button onClick={() => deleteFeedback(f.id)} className="bg-red-600 text-white text-[7px] font-black px-3 py-2 uppercase">
-                    Eliminar
-                  </button>
+              <div key={f.id} className="relative group border rounded-xl overflow-hidden bg-zinc-100 shadow-sm">
+                {f.image_url && <img src={f.image_url} className="w-full aspect-square object-cover" alt="feedback" />}
+                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2">
+                  <button onClick={() => editFeedbackProduct(f.id)} className="bg-white text-black text-[8px] font-black px-4 py-2 uppercase">Editar</button>
+                  <button onClick={() => deleteFeedback(f.id, f.image_url)} className="bg-red-600 text-white text-[8px] font-black px-4 py-2 uppercase">Eliminar</button>
                 </div>
-                {!f.is_approved && <div className="absolute top-2 left-2 bg-yellow-400 text-black text-[7px] font-black px-2 py-1 uppercase italic">Oculto</div>}
               </div>
             ))}
           </div>
         </section>
       </div>
 
-      {/* 4. LISTA DE PRODUCTOS */}
+      {/* 4. INVENTARIO */}
       <section className="bg-white border rounded-2xl p-6 shadow-sm">
         <h2 className="font-black text-2xl mb-6 uppercase italic text-black">Inventario Actual</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -223,6 +223,7 @@ export default function AdminPanel() {
                   <p className="text-[9px] text-zinc-400 uppercase font-bold">${p.price.toLocaleString('es-CL')}</p>
                 </div>
               </div>
+              {/* CORRECCIÓN AQUÍ: Pasamos el objeto completo 'p' */}
               <button onClick={() => deleteProduct(p)} className="text-[8px] font-black uppercase bg-red-50 text-red-600 px-3 py-2 rounded-lg border border-red-100 hover:bg-red-600 hover:text-white transition-all">Eliminar</button>
             </div>
           ))}
