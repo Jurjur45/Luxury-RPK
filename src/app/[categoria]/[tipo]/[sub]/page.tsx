@@ -17,7 +17,12 @@ interface Product {
   description?: string;
 }
 
-export default function SubcategoryPage({ params: paramsPromise }: { params: Promise<{ tipo: string; sub: string }> }) {
+// CORRECCIÓN: Los params ahora incluyen 'categoria' para coincidir con tu estructura de carpetas
+export default function SubcategoryPage({ 
+  params: paramsPromise 
+}: { 
+  params: Promise<{ categoria: string; tipo: string; sub: string }> 
+}) {
   const params = use(paramsPromise);
   const [products, setProducts] = useState<Product[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -38,7 +43,7 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
   useEffect(() => {
     checkUser();
     fetchProducts();
-  }, [params.tipo, params.sub]);
+  }, [params.categoria, params.tipo, params.sub]);
 
   async function checkUser() {
     if (typeof window !== 'undefined') {
@@ -48,17 +53,29 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
   }
 
   async function fetchProducts() {
-    const { data, error } = await supabase
+    setLoading(true);
+    
+    // Filtro base por categoría principal (ropa/calzado)
+    let query = supabase
       .from('products')
       .select('*')
-      .eq('category', params.tipo.toLowerCase().trim())
-      .eq('subcategory', params.sub.toLowerCase().trim());
+      .eq('category', params.categoria.toLowerCase().trim());
     
-    if (error) console.error(error);
+    // Lógica de comodín: Si la subcategoría es 'articulos' (como manda el Home), 
+    // mostramos todo de esa categoría. Si no, filtramos por la subcategoría específica.
+    const subValue = params.sub.toLowerCase().trim();
+    if (subValue !== 'articulos') {
+      query = query.eq('subcategory', subValue);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) console.error("Error Luxury RPK:", error);
     else setProducts(data || []);
     setLoading(false);
   }
 
+  // ... (Funciones deleteProduct, startEdit, setAsMainImage, handleUploadSuccess iguales)
   async function deleteProduct(id: string) {
     if (confirm('¿Seguro que quieres borrar este producto de Luxury RPK?')) {
       const { error } = await supabase.from('products').delete().eq('id', id);
@@ -81,6 +98,15 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const setAsMainImage = (index: number) => {
+    setNewProduct(prev => {
+      const newImages = [...prev.image_url];
+      const [selectedImage] = newImages.splice(index, 1);
+      newImages.unshift(selectedImage);
+      return { ...prev, image_url: newImages };
+    });
+  };
+
   const handleUploadSuccess = (result: any) => {
     const secureUrl = result.info.secure_url;
     setNewProduct(prev => ({ ...prev, image_url: [...prev.image_url, secureUrl] }));
@@ -88,7 +114,13 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const productData = { ...newProduct, category: params.tipo.toLowerCase(), subcategory: params.sub.toLowerCase() };
+    // Guardamos usando los params de la URL para mantener consistencia
+    const productData = { 
+      ...newProduct, 
+      category: params.categoria.toLowerCase(), 
+      subcategory: params.sub.toLowerCase() 
+    };
+    
     let error;
     if (editingId) {
       const { error: updateError } = await supabase.from('products').update(productData).eq('id', editingId);
@@ -97,6 +129,7 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
       const { error: insertError } = await supabase.from('products').insert([productData]);
       error = insertError;
     }
+    
     if (!error) {
       setNewProduct({ name: '', price: 0, image_url: [], slug: '', description: '', product_type: 'in_stock' });
       setEditingId(null);
@@ -121,14 +154,20 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
 
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-8">
           <div>
-            <h1 className="text-7xl md:text-8xl font-black uppercase italic tracking-tighter leading-none text-black">{params.sub}</h1>
-            <p className="text-zinc-400 text-[10px] font-black tracking-[0.6em] uppercase mt-6 border-l-2 border-black pl-4">Luxury Selection — {params.tipo}</p>
+            <h1 className="text-7xl md:text-8xl font-black uppercase italic tracking-tighter leading-none text-black">
+              {/* Si la subcategoría es 'articulos', mostramos la categoría (Ropa o Zapatillas) */}
+              {params.sub === 'articulos' 
+                ? (params.categoria === 'calzado' ? 'Zapatillas' : params.categoria) 
+                : params.sub}
+            </h1>
+            <p className="text-zinc-400 text-[10px] font-black tracking-[0.6em] uppercase mt-6 border-l-2 border-black pl-4">Luxury Selection — {params.categoria}</p>
           </div>
           <div className="relative w-full md:w-96">
             <input type="text" placeholder="BUSCAR MODELO..." className="bg-zinc-50 border border-zinc-200 px-6 py-5 w-full text-[10px] font-black tracking-[0.2em] outline-none uppercase focus:border-black transition-all" onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
 
+        {/* ... (Sección isAdmin y Formulario de carga iguales al original) ... */}
         {isAdmin && (
           <div className="mb-20 border-y border-zinc-100 py-12 bg-zinc-50/50 px-6">
             <button onClick={() => { setShowAddForm(!showAddForm); if(editingId) setEditingId(null); }} className="bg-black text-white text-[10px] font-black px-10 py-5 uppercase tracking-[0.3em]">
@@ -136,7 +175,7 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
             </button>
             {showAddForm && (
               <form onSubmit={handleSubmit} className="mt-12 space-y-10 max-w-4xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="flex flex-col gap-2">
                     <label className="text-[9px] font-black uppercase text-zinc-400">Modelo (Ej: Jordan 4 Retro)</label>
                     <input type="text" placeholder="MODELO" className="p-5 border text-xs font-bold uppercase italic outline-none focus:border-black" required onChange={e => setNewProduct({...newProduct, name: e.target.value})} value={newProduct.name} />
@@ -157,20 +196,27 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
                     </select>
                   </div>
                 </div>
-
                 <textarea placeholder="DESCRIPCIÓN" className="w-full p-5 border text-xs font-bold min-h-[100px] outline-none focus:border-black" value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} />
-
                 <div className="space-y-4">
                   <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Galería</label>
                   <div className="grid grid-cols-4 lg:grid-cols-6 gap-4">
                     {newProduct.image_url.map((url, index) => (
-                      <div key={index} className="relative aspect-square border group overflow-hidden">
-                        <img src={url} alt="preview" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                        <button type="button" onClick={() => { const up = newProduct.image_url.filter((_, i) => i !== index); setNewProduct({...newProduct, image_url: up}); }} className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 text-white text-[8px] font-black transition-all">QUITAR</button>
+                      <div key={index} className={`relative aspect-square border group overflow-hidden ${index === 0 ? 'border-black border-2' : 'border-zinc-200'}`}>
+                        <img src={url} alt="preview" className="w-full h-full object-cover transition-all" />
+                        {index === 0 && <div className="absolute top-0 left-0 bg-black text-white text-[7px] font-black px-2 py-1 uppercase italic">Portada</div>}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-2">
+                          {index !== 0 && <button type="button" onClick={() => setAsMainImage(index)} className="bg-white text-black text-[7px] font-black py-2 px-3 uppercase hover:bg-zinc-200">Usar como Portada</button>}
+                          <button type="button" onClick={() => { const up = newProduct.image_url.filter((_, i) => i !== index); setNewProduct({...newProduct, image_url: up}); }} className="text-white text-[7px] font-black uppercase hover:underline">Quitar</button>
+                        </div>
                       </div>
                     ))}
                     <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleUploadSuccess}>
-                      {({ open }) => ( <button type="button" onClick={() => open()} className="aspect-square border-2 border-dashed flex flex-col items-center justify-center text-zinc-300 hover:text-black hover:border-black transition-all"> <span className="text-xl">+</span> <span className="text-[8px] font-black uppercase">Subir</span> </button> )}
+                      {({ open }) => ( 
+                        <button type="button" onClick={() => open()} className="aspect-square border-2 border-dashed flex flex-col items-center justify-center text-zinc-300 hover:text-black hover:border-black transition-all"> 
+                          <span className="text-xl">+</span> 
+                          <span className="text-[8px] font-black uppercase">Subir</span> 
+                        </button> 
+                      )}
                     </CldUploadWidget>
                   </div>
                 </div>
@@ -190,7 +236,8 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
                 {groupedProducts[modelName].map((product) => (
                   <div key={product.id} className="relative group">
-                    <Link href={`/categoria/${product.category}/${product.subcategory}/${product.slug}`}>
+                    {/* RUTA DINÁMICA: Ajustada para entrar al detalle del producto */}
+                    <Link href={`/${product.category}/${product.subcategory}/${product.slug}`}>
                       <div className="aspect-[4/5] bg-zinc-50 overflow-hidden mb-6 border border-zinc-100 relative">
                         {product.product_type !== 'in_stock' && (
                           <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur px-3 py-1 border border-zinc-200">
@@ -198,25 +245,15 @@ export default function SubcategoryPage({ params: paramsPromise }: { params: Pro
                           </div>
                         )}
                         {product.image_url && product.image_url.length > 0 ? (
-                          <CldImage 
-                            width="600" 
-                            height="750" 
-                            src={product.image_url[0]} 
-                            alt={product.slug} 
-                            className="object-cover w-full h-full grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000" 
-                          />
+                          <CldImage width="600" height="750" src={product.image_url[0]} alt={product.slug} />
                         ) : ( 
                           <div className="w-full h-full flex items-center justify-center text-zinc-300 text-[8px] font-black uppercase">Sin Imagen</div> 
                         )}
                       </div>
-
                       <div className="space-y-1">
-                        {/* AHORA: Solo el Slug formateado como nombre principal */}
                         <h3 className="text-[13px] font-black uppercase tracking-tight group-hover:italic transition-all leading-tight">
                           {product.slug.replace(/-/g, ' ')}
                         </h3>
-                        
-                        {/* El precio directamente debajo */}
                         <p className="text-[12px] font-medium text-zinc-900 mt-1">
                           ${Number(product.price).toLocaleString('es-CL')}
                         </p>

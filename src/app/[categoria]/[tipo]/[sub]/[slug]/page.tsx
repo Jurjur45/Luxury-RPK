@@ -73,76 +73,102 @@ export default function ProductDetailPage({
   );
 
   return (
-    <div className="bg-white min-h-screen pt-32 pb-20 px-6">
+    <div className="bg-white min-h-screen pt-20 md:pt-32 pb-10 md:pb-20 px-4 md:px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-12">
+        <div className="mb-6 md:mb-12">
           <BackButton />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24">
-          {/* GALERÍA DE IMÁGENES */}
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 lg:gap-24">
+          
+          {/* GALERÍA DE IMÁGENES - AJUSTADA PARA MÓVIL */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4 h-fit order-1 md:order-1">
             {product.image_url && product.image_url.length > 0 ? (
               product.image_url.map((url: string, index: number) => {
-                // Si la URL es completa (empieza con http), CldImage puede fallar 
-                // si no está configurado el loader. Usamos <img> para asegurar.
                 const isFullUrl = url.startsWith('http');
-
                 return (
-                  <div key={index} className="aspect-square bg-zinc-50 border border-zinc-100 overflow-hidden">
+                  <div key={index} className="aspect-[4/5] bg-zinc-50 border border-zinc-100 overflow-hidden">
                     {isFullUrl ? (
                       <img 
                         src={url} 
                         alt={`${product.name} - ${index}`}
-                        className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <CldImage
-                        width="1000"
-                        height="1000"
+                        width="600"
+                        height="750"
                         src={url}
                         alt={`${product.name} - ${index}`}
-                        className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                        className="w-full h-full object-cover"
                       />
                     )}
                   </div>
                 );
               })
             ) : (
-              <div className="aspect-square bg-zinc-50 flex items-center justify-center text-zinc-300 text-[10px] font-black uppercase">
-                Sin Imágenes Disponibles
+              <div className="col-span-2 aspect-square bg-zinc-50 flex items-center justify-center text-zinc-300 text-[10px] font-black uppercase">
+                Sin Imágenes
               </div>
             )}
           </div>
 
           {/* INFO DEL PRODUCTO */}
-          <div className="flex flex-col justify-start md:sticky md:top-32 h-fit">
-            <div className="border-b border-zinc-100 pb-10 mb-10">
+          <div className="flex flex-col justify-start md:sticky md:top-32 h-fit order-2 md:order-2">
+            <div className="border-b border-zinc-100 pb-8 md:pb-10 mb-8 md:mb-10">
               
-              <div className="mb-8">
+              <div className="mb-6 md:mb-8">
                 {product.product_type === 'in_stock' ? (
-                  <span className="bg-black text-white text-[9px] font-black px-4 py-2 uppercase italic tracking-[0.2em]">✓ Stock en Valdivia</span>
+                  <span className="bg-black text-white text-[8px] md:text-[9px] font-black px-3 py-1.5 md:px-4 md:py-2 uppercase italic tracking-[0.2em]">
+                    ✓ Stock en Valdivia
+                  </span>
                 ) : (
-                  <span className="bg-zinc-100 text-zinc-500 text-[9px] font-black px-4 py-2 uppercase italic tracking-[0.2em] border border-zinc-200">✈ Bajo Pedido</span>
+                  <span className="bg-zinc-100 text-zinc-500 text-[8px] md:text-[9px] font-black px-3 py-1.5 md:px-4 md:py-2 uppercase italic tracking-[0.2em] border border-zinc-200">
+                    ✈ Bajo Pedido
+                  </span>
                 )}
               </div>
 
-              {/* CAMBIO: Ahora aquí mostramos el SLUG (Nombre del producto) como detalle superior */}
-              <span className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-400 mb-4 block">
-                {product.slug.replace(/-/g, ' ')} {/* Reemplazamos guiones por espacios para que se vea limpio */}
+              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] md:tracking-[0.6em] text-zinc-400 mb-2 md:mb-4 block">
+                {product.slug.replace(/-/g, ' ')}
               </span>
 
-              {/* CAMBIO: El título principal ahora es el NAME (que actúa como el Modelo) */}
-              <h1 className="text-6xl lg:text-7xl font-black uppercase italic leading-[0.9] mb-6 tracking-tighter text-black">
-                {product.name}
-              </h1>
-
-              <p className="text-3xl font-medium italic text-zinc-900">
+              <p className="text-2xl md:text-3xl font-medium italic text-zinc-900 mb-8 md:mb-10">
                 ${Number(product.price).toLocaleString('es-CL')}
+              </p>
+
+              {/* BOTÓN DE INSTAGRAM - AJUSTADO PARA MÓVIL */}
+              <a 
+                href="https://www.instagram.com/luxuryrpk" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 md:gap-3 w-full bg-black text-white py-4 md:py-6 rounded-full font-black text-[10px] md:text-sm uppercase italic tracking-[0.2em] hover:bg-zinc-800 transition-all shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="16" height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" stroke="currentColor" 
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  className="md:w-5 md:h-5"
+                >
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+                Instagram Shop
+              </a>
+              
+              <p className="text-[8px] md:text-[10px] text-zinc-400 font-bold uppercase tracking-widest text-center mt-4 italic">
+                Envío a todo Chile · Entrega en Valdivia
               </p>
             </div>
             
-            {/* ... (Resto del componente: descripción, botón de Instagram, etc.) */}
+            <div className="space-y-4">
+              <p className="text-xs md:text-sm leading-relaxed text-zinc-500">
+                Producto seleccionado de nuestra línea exclusiva. Consulta disponibilidad de tallas vía DM antes de realizar tu pedido.
+              </p>
+            </div>
           </div>
         </div>
       </div>

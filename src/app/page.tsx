@@ -1,109 +1,193 @@
 'use client'
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { CldImage } from 'next-cloudinary';
+import ProductCard from '@/components/ProductCard';
 
 export default function Home() {
   const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [heroTitle, setHeroTitle] = useState('LUXURY RPK');
+  const [imgHero, setImgHero] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const scrollToCategories = () => sectionRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   useEffect(() => {
-    async function getProducts() {
-      const { data } = await supabase
-        .from('products')
-        .select('*')
-        .eq('product_type', 'in_stock')
-        .limit(3);
-      if (data) setProducts(data);
-      setLoading(false);
+    const session = localStorage.getItem('isLuxuryAdmin');
+    setIsAdmin(session === 'true');
+
+    async function loadData() {
+      const { data: contentData } = await supabase.from('site_content').select('*');
+      if (contentData) {
+        const map = Object.fromEntries(contentData.map(c => [c.key, c.value]));
+        setHeroTitle(map.hero_title || 'LUXURY RPK');
+        setImgHero(map.img_hero_bg || ''); 
+      }
+
+      const { data: productsData } = await supabase.from('products').select('*');
+      if (productsData) setProducts(productsData);
+
+      const { data: fbData } = await supabase.from('feedbacks').select('*, products(name)').eq('is_approved', true);
+      if (fbData) setFeedbacks(fbData);
     }
-    getProducts();
+
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    
+    loadData();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Definimos las rutas exactas para que no mande a "/todos"
-  const categorias = [
-    { nombre: 'Ropa', slug: 'ropa', sub: 'poleras' },
-    { nombre: 'Zapatillas', slug: 'calzado', sub: 'zapatillas' },
-    { nombre: 'Accesorios', slug: 'accesorios', sub: 'bolsos' }
-  ];
-
   return (
-    <div className="bg-white min-h-screen text-black">
-      {/* HERO SECTION */}
-      <section className="relative h-[80vh] flex items-center justify-center bg-zinc-900">
-        <div className="z-10 text-center px-4">
-          <h1 className="text-7xl md:text-9xl font-black tracking-tighter text-white italic leading-none">
+    <div className="bg-white text-black antialiased">
+      
+      {/* HEADER */}
+      <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
+        isScrolled 
+          ? 'bg-white/90 backdrop-blur-md border-b border-zinc-100 py-2 md:py-3 shadow-sm' 
+          : 'bg-black/10 backdrop-blur-sm py-4 md:py-5 border-b border-white/5'
+      }`}>
+        <div className="max-w-[1440px] mx-auto px-4 md:px-8 flex justify-between items-center">
+          
+          <Link href="/" className={`text-base md:text-xl font-black uppercase italic tracking-tighter transition-colors duration-500 ${
+            isScrolled ? 'text-black' : 'text-white'
+          }`}>
             LUXURY RPK
-          </h1>
-          <p className="text-white/70 tracking-[0.6em] uppercase mt-6 text-[10px] font-bold">
-            EXCLUSIVE STREETWEAR — VALDIVIA 🇨🇱
-          </p>
+          </Link>
+
+          <nav className="flex gap-4 md:gap-12">
+            {['Ropa', 'Zapatillas', 'Instagram'].map((item) => {
+              if (item === 'Instagram') {
+                return (
+                  <a 
+                    key={item}
+                    href="https://www.instagram.com/luxuryrpk.cl/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500 ${
+                      isScrolled ? 'text-black hover:text-zinc-500' : 'text-white/80 hover:text-white'
+                    }`}
+                  >
+                    {item}
+                  </a>
+                );
+              }
+
+              const categoryPath = item.toLowerCase().replace('zapatillas', 'calzado');
+              // IMPORTANTE: Esta ruta debe coincidir con la lógica de tu SubcategoryPage
+              return (
+                <Link 
+                  key={item}
+                  href={`/${categoryPath}/todas/articulos`} 
+                  className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500 ${
+                    isScrolled ? 'text-black hover:text-zinc-500' : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  {item}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </header>
+
+      {/* 1. HERO */}
+      <section className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-black">
+        <div className="absolute inset-0 z-0 opacity-70">
+          {imgHero && <CldImage src={imgHero} alt="Hero" fill className="object-cover" priority />}
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 z-10" />
+        <div className="relative z-20 text-center px-6">
+          <h1 className="text-[15vw] md:text-[12vw] leading-none font-black uppercase italic text-white">{heroTitle}</h1>
+          <button onClick={scrollToCategories} className="mt-8 border-2 border-white text-white px-12 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
+            Explorar Selección
+          </button>
         </div>
       </section>
 
-      {/* CATEGORÍAS - AQUÍ ESTÁ EL CAMBIO */}
-      <main className="max-w-7xl mx-auto py-24 px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
-          {categorias.map((cat) => (
-            <Link 
-              href={`/categoria/${cat.slug}/${cat.sub}`} // Ahora usa la subcategoría específica
-              key={cat.nombre} 
-              className="group relative h-[500px] bg-zinc-100 overflow-hidden border border-zinc-200"
-            >
-              <div className="absolute inset-0 flex flex-col items-center justify-center z-10 text-white group-hover:scale-110 transition-transform duration-500">
-                <h2 className="text-3xl font-black uppercase italic tracking-tighter drop-shadow-md">
-                  {cat.nombre}
-                </h2>
-                <span className="text-[10px] font-bold tracking-[0.3em] uppercase mt-2 border-b border-white/40 pb-1">
-                  Ver {cat.nombre === 'Zapatillas' ? 'Sneakers' : 'Colección'}
-                </span>
+      <main className="max-w-[1440px] mx-auto px-6">
+        
+        {/* 2. CATEGORÍAS */}
+        <section ref={sectionRef} className="py-20 space-y-24">
+          {['ropa', 'calzado'].map((cat) => (
+            <div key={cat}>
+              <h2 className="text-4xl font-black uppercase italic tracking-tighter mb-8">
+                {cat === 'calzado' ? 'Zapatillas' : 'Ropa'}
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {products.filter(p => p.category === cat).slice(0, 4).map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+                
+                {/* BOTÓN VER TODO: Sincronizado con el Header */}
+                <Link 
+                  href={`/${cat}/todas/articulos`} 
+                  className="aspect-[4/5] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center hover:border-black transition-all group bg-zinc-50/30"
+                >
+                  <span className="text-[10px] font-black uppercase tracking-widest text-center px-2">
+                    Ver Todo {cat === 'calzado' ? 'Zapatillas' : 'Ropa'}
+                  </span>
+                  <span className="text-xl mt-2 group-hover:translate-x-1 transition-transform">→</span>
+                </Link>
               </div>
-              <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors" />
-            </Link>
+            </div>
           ))}
-        </div>
+        </section>
 
-        {/* 3. SECCIÓN: ENTREGA INMEDIATA (Página Principal) */}
-        <section className="max-w-7xl mx-auto px-6 mb-32">
-          <h2 className="text-5xl font-black uppercase italic tracking-tighter text-black mb-12">
-            Entrega Inmediata
-          </h2>
+        {/* 3. COMMUNITY FEEDBACK */}
+        <section className="py-24 border-t border-zinc-100">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-black uppercase italic tracking-tighter">Community</h2>
+            <p className="text-zinc-500 mt-4 uppercase text-[10px] font-black tracking-[0.3em]">Nuestros clientes en todo Chile</p>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {!loading && products.map((product) => (
-              <Link 
-                key={product.id} 
-                // IMPORTANTE: Construimos la ruta completa usando los datos de la DB
-                href={`/categoria/${product.category}/${product.subcategory}/${product.slug}`} 
-                className="group"
-              >
-                <div className="aspect-[3/4] bg-zinc-100 overflow-hidden mb-6 relative border border-zinc-100">
-                  <div className="absolute top-4 left-4 z-10 bg-black text-white text-[8px] font-black px-3 py-1.5 uppercase tracking-widest italic">
-                    Ready to Ship
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {feedbacks.map((item) => (
+              <article key={item.id} className="group">
+                <div className="aspect-square mb-6 overflow-hidden bg-zinc-50 relative border border-zinc-100">
+                  <div className="absolute top-4 right-4 flex gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-full z-10">
+                    {[...Array(5)].map((_, i) => <span key={i} className="text-amber-400 text-[10px]">★</span>)}
                   </div>
-                  {product.image_url?.[0] && (
-                    <CldImage 
-                      src={product.image_url[0]} 
-                      width={500} 
-                      height={667} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                    />
+                  {item.image_url && (
+                    <CldImage src={item.image_url} alt="Review" fill className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
                   )}
                 </div>
-                <h3 className="font-black uppercase text-sm italic tracking-tight">{product.name}</h3>
-                <p className="text-zinc-500 text-sm font-medium mt-1">
-                  ${Number(product.price).toLocaleString('es-CL')}
-                </p>
-              </Link>
+                <div className="space-y-3">
+                  <p className="text-xl font-black uppercase italic leading-tight tracking-tighter">&quot;{item.comment}&quot;</p>
+                  <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest border-l-2 border-zinc-200 pl-3">
+                    {item.products?.name || 'Luxury Client'}
+                  </p>
+                </div>
+              </article>
             ))}
-            
-            {/* ... botón de ver todo ... */}
+
+            {isAdmin && (
+              <Link 
+                href="/admin" 
+                className="aspect-square border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center group hover:border-black transition-all bg-zinc-50/50"
+              >
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => <span key={i} className="text-zinc-300 group-hover:text-amber-400 transition-colors text-xl">★</span>)}
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 group-hover:text-black">
+                  + Agregar Feedback
+                </span>
+              </Link>
+            )}
           </div>
         </section>
       </main>
+
+      <footer className="bg-black text-white py-20 px-6 mt-20">
+        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+          <span className="text-4xl font-black italic tracking-tighter uppercase">LUXURY RPK</span>
+          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">© 2026 Crafted in Valdivia</p>
+        </div>
+      </footer>
     </div>
   );
 }
