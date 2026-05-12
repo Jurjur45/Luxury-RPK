@@ -138,21 +138,21 @@ export default function Home() {
           ))}
         </section>
 
-        {/* 3. COMMUNITY FEEDBACK - Versión Slider Horizontal */}
-        <section className="py-24 border-t border-zinc-100 overflow-hidden">
-          <div className="text-center mb-16 px-6">
-            <h2 className="text-5xl font-black uppercase italic tracking-tighter">Community</h2>
-            <p className="text-zinc-500 mt-4 uppercase text-[10px] font-black tracking-[0.3em]">Nuestros clientes en todo Chile</p>
+        {/* 3. COMMUNITY FEEDBACK - Versión Alargada y Proporcional */}
+        <section className="py-20 border-t border-zinc-100 overflow-hidden bg-white">
+          <div className="text-center mb-12 px-6">
+            <h2 className="text-4xl font-black uppercase italic tracking-tighter">Community</h2>
+            <p className="text-zinc-400 mt-2 uppercase text-[9px] font-black tracking-[0.3em]">Envíos garantizados a todo Chile</p>
           </div>
 
           {/* Contenedor del Scroll Horizontal */}
-          <div className="flex gap-4 md:gap-8 overflow-x-auto pb-12 px-6 no-scrollbar snap-x snap-mandatory">
+          <div className="flex gap-4 overflow-x-auto pb-10 px-6 no-scrollbar snap-x snap-mandatory">
             {feedbacks.map((item) => (
-              <article key={item.id} className="flex-none w-[75vw] md:w-[400px] snap-center group">
-                <div className="aspect-[4/5] mb-6 overflow-hidden bg-zinc-50 relative border border-zinc-100 shadow-xl">
-                  {/* Estrellas flotantes */}
-                  <div className="absolute top-4 right-4 flex gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-full z-10">
-                    {[...Array(5)].map((_, i) => <span key={i} className="text-amber-400 text-[10px]">★</span>)}
+              <article key={item.id} className="flex-none w-[180px] md:w-[240px] snap-center group">
+                <div className="aspect-[9/16] mb-4 overflow-hidden bg-zinc-50 relative border border-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-xl">
+                  {/* Estrellas minimalistas */}
+                  <div className="absolute top-3 right-3 flex gap-0.5 bg-black/20 backdrop-blur-sm px-2 py-1 rounded-full z-10">
+                    {[...Array(5)].map((_, i) => <span key={i} className="text-amber-400 text-[8px]">★</span>)}
                   </div>
                   
                   {item.image_url && (
@@ -164,41 +164,29 @@ export default function Home() {
                     />
                   )}
                 </div>
-                {/* Info del producto vinculado (opcional) */}
-                <div className="px-2">
-                   <p className="text-[10px] font-black text-black uppercase tracking-widest border-l-2 border-black pl-3">
-                    {item.products?.name || 'Luxury Client Review'}
+                
+                <div className="px-1">
+                   <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest border-l border-zinc-200 pl-2">
+                    {item.products?.name || 'Verified Client'}
                   </p>
                 </div>
               </article>
             ))}
 
-            {/* BOTÓN ADMIN: Al final del slider si eres admin */}
+            {/* BOTÓN ADMIN: Más pequeño también */}
             {isAdmin && (
               <Link 
                 href="/admin" 
-                className="flex-none w-[75vw] md:w-[400px] snap-center aspect-[4/5] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center group hover:border-black transition-all bg-zinc-50/50"
+                className="flex-none w-[180px] md:w-[240px] snap-center aspect-[9/16] border border-dashed border-zinc-200 flex flex-col items-center justify-center group hover:border-black transition-all bg-zinc-50/50"
               >
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 group-hover:text-black">
-                  + Gestionar Reseñas
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-black">
+                  + Gestionar
                 </span>
               </Link>
             )}
             
-            {/* Espaciador final para que el scroll no termine abruptamente */}
-            <div className="flex-none w-10 md:w-20" />
+            <div className="flex-none w-10" />
           </div>
-
-          {/* CSS para ocultar la barra de scroll */}
-          <style jsx global>{`
-            .no-scrollbar::-webkit-scrollbar {
-              display: none;
-            }
-            .no-scrollbar {
-              -ms-overflow-style: none;
-              scrollbar-width: none;
-            }
-          `}</style>
         </section>
       </main>
 
