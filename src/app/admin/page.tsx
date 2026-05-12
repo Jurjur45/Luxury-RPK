@@ -73,10 +73,37 @@ export default function AdminPanel() {
 
   const addFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.from('feedbacks').insert([{ 
-      product_id: productId || null, rating, comment, image_url: feedbackImage || null, is_approved: true 
-    }]);
-    if (!error) { setComment(''); setFeedbackImage(''); loadAdminData(); }
+    
+    // Validamos que haya al menos un comentario o una imagen
+    if (!comment && !feedbackImage) {
+      alert("Debes agregar al menos un comentario o una imagen para el feedback");
+      return;
+    }
+
+    // Preparamos el objeto asegurando que el ID sea null si es "Tienda General"
+    const feedbackData = { 
+      product_id: productId && productId !== "" ? productId : null, 
+      rating: Number(rating), 
+      comment: comment.trim(), 
+      image_url: feedbackImage || null, 
+      is_approved: true 
+    };
+
+    const { error } = await supabase
+      .from('feedbacks')
+      .insert([feedbackData]);
+
+    if (error) {
+      console.error("Error al subir feedback:", error.message);
+      alert("Error de Supabase: " + error.message);
+    } else {
+      alert("¡Feedback subido con éxito!");
+      // Limpiamos todo
+      setComment('');
+      setFeedbackImage('');
+      setRating(5);
+      loadAdminData(); 
+    }
   };
 
   const deleteFeedback = async (id: string) => { await supabase.from('feedbacks').delete().eq('id', id); loadAdminData(); };
@@ -143,8 +170,14 @@ export default function AdminPanel() {
             
             <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleFeedbackUploadSuccess}>
               {({ open }) => (
-                <button type="button" onClick={() => open()} className="w-full border-2 border-dashed p-3 text-[10px] font-black uppercase text-zinc-500">
-                  {feedbackImage ? "✓ Imagen Cargada" : "+ Subir Captura de Pantalla"}
+                <button 
+                  type="button" 
+                  onClick={() => open()} 
+                  className={`w-full border-2 border-dashed p-3 text-[10px] font-black uppercase transition-all ${
+                    feedbackImage ? "border-green-500 text-green-600 bg-green-50" : "border-zinc-200 text-zinc-500"
+                  }`}
+                >
+                  {feedbackImage ? "✓ Imagen Cargada Correctamente" : "+ Subir Captura (WhatsApp/Instagram)"}
                 </button>
               )}
             </CldUploadWidget>
