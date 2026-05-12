@@ -139,7 +139,7 @@ export default function ProductDetailPage({
 
               {/* BOTÓN DE INSTAGRAM - AJUSTADO PARA MÓVIL */}
               <a 
-                href="https://www.instagram.com/luxuryrpk" 
+                href="https://www.instagram.com/luxuryrpk.cl/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 md:gap-3 w-full bg-black text-white py-4 md:py-6 rounded-full font-black text-[10px] md:text-sm uppercase italic tracking-[0.2em] hover:bg-zinc-800 transition-all shadow-xl hover:scale-[1.02] active:scale-[0.98]"

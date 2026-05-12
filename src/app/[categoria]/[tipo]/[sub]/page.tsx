@@ -236,35 +236,69 @@ export default function SubcategoryPage({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
                 {groupedProducts[modelName].map((product) => (
                   <div key={product.id} className="relative group">
-                    {/* RUTA DINÁMICA: Ajustada para entrar al detalle del producto */}
-                    <Link href={`/${product.category}/${product.subcategory}/${product.slug}`}>
-                      <div className="aspect-[4/5] bg-zinc-50 overflow-hidden mb-6 border border-zinc-100 relative">
-                        {product.product_type !== 'in_stock' && (
-                          <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur px-3 py-1 border border-zinc-200">
-                            <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Bajo Pedido</p>
-                          </div>
-                        )}
-                        {product.image_url && product.image_url.length > 0 ? (
-                          <CldImage width="600" height="750" src={product.image_url[0]} alt={product.slug} />
-                        ) : ( 
-                          <div className="w-full h-full flex items-center justify-center text-zinc-300 text-[8px] font-black uppercase">Sin Imagen</div> 
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <h3 className="text-[13px] font-black uppercase tracking-tight group-hover:italic transition-all leading-tight">
-                          {product.slug.replace(/-/g, ' ')}
-                        </h3>
-                        <p className="text-[12px] font-medium text-zinc-900 mt-1">
-                          ${Number(product.price).toLocaleString('es-CL')}
-                        </p>
-                      </div>
-                    </Link>
-                    {isAdmin && (
-                      <div className="absolute top-4 right-4 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-all">
-                        <button onClick={(e) => { e.preventDefault(); startEdit(product); }} className="bg-white/90 backdrop-blur text-black text-[8px] font-black px-3 py-2 border border-zinc-200 hover:bg-black hover:text-white transition-all">EDITAR</button>
-                        <button onClick={(e) => { e.preventDefault(); deleteProduct(product.id); }} className="bg-red-600/90 backdrop-blur text-white text-[8px] font-black px-3 py-2 border border-red-600 hover:bg-black hover:border-black transition-all">BORRAR</button>
-                      </div>
-                    )}
+                    {/* Contenedor del Producto */}
+                    <div className="relative">
+                      <Link 
+                        href={`/categoria/${product.category}/${product.subcategory}/${product.slug}`}
+                        
+                        onClick={(e) => {
+                          if (isAdmin && window.innerWidth < 768) {
+                            e.preventDefault();
+                            startEdit(product);
+                          }
+                        }}
+                      >
+                        <div className="aspect-[4/5] bg-zinc-50 overflow-hidden mb-6 border border-zinc-100 relative">
+                          {product.product_type !== 'in_stock' && (
+                            <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur px-3 py-1 border border-zinc-200">
+                              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Bajo Pedido</p>
+                            </div>
+                          )}
+                          
+                          {product.image_url && product.image_url.length > 0 ? (
+                            <CldImage width="600" height="750" src={product.image_url[0]} alt={product.slug} />
+                          ) : ( 
+                            <div className="w-full h-full flex items-center justify-center text-zinc-300 text-[8px] font-black uppercase">Sin Imagen</div> 
+                          )}
+
+                          {/* Overlay de Admin para Móvil (Siempre visible si es Admin) */}
+                          {isAdmin && (
+                            <div className="absolute inset-0 bg-black/5 md:bg-transparent pointer-events-none border-2 border-black/20 md:border-none" />
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <h3 className="text-[13px] font-black uppercase tracking-tight leading-tight">
+                            {product.slug.replace(/-/g, ' ')}
+                          </h3>
+                          <p className="text-[12px] font-medium text-zinc-900 mt-1">
+                            ${Number(product.price).toLocaleString('es-CL')}
+                          </p>
+                        </div>
+                      </Link>
+
+                      {/* BOTONES DE CONTROL: Siempre visibles en móvil para el admin */}
+                      {isAdmin && (
+                        <div className={`absolute top-2 right-2 flex flex-col gap-2 z-30 transition-all 
+                          ${/* En desktop (md) ocultos hasta hover, en móvil siempre visibles */ ''}
+                          opacity-100 md:opacity-0 md:group-hover:opacity-100`}>
+                          
+                          <button 
+                            onClick={(e) => { e.preventDefault(); startEdit(product); }} 
+                            className="bg-black text-white text-[10px] font-black p-3 shadow-2xl flex items-center justify-center"
+                          >
+                            EDITAR
+                          </button>
+                          
+                          <button 
+                            onClick={(e) => { e.preventDefault(); deleteProduct(product.id); }} 
+                            className="bg-red-600 text-white text-[10px] font-black p-3 shadow-2xl flex items-center justify-center"
+                          >
+                            BORRAR
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
