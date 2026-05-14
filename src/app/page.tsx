@@ -141,8 +141,8 @@ export default function Home() {
         {/* 3. COMMUNITY FEEDBACK - Versión Alargada y Proporcional */}
         <section className="py-20 border-t border-zinc-100 overflow-hidden bg-white">
           <div className="text-center mb-12 px-6">
-            <h2 className="text-4xl font-black uppercase italic tracking-tighter">Community</h2>
-            <p className="text-zinc-400 mt-2 uppercase text-[9px] font-black tracking-[0.3em]">Envíos garantizados a todo Chile</p>
+            <h2 className="text-4xl font-black uppercase italic tracking-tighter">Feedback</h2>
+            <p className="text-zinc-400 mt-2 uppercase text-[9px] font-black tracking-[0.3em]">Envíos a todo Chile y presencial Valdivia</p>
           </div>
 
           {/* Contenedor del Scroll Horizontal */}
