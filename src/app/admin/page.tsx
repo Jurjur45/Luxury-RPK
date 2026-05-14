@@ -61,7 +61,12 @@ export default function AdminPanel() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const slug = name.toLowerCase().trim().replace(/\s+/g, '-');
+    const slug = name
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')           // Espacios por guiones
+      .replace(/[^\w\-]+/g, '')       // Elimina todo lo que no sea letra, número o guion
+      .replace(/\-\-+/g, '-');        // Evita guiones dobles --
     const { error } = await supabase.from('products').insert([{ name, price: Number(price), image_url: images, category, subcategory, slug }]);
     if (!error) { setImages([]); setName(''); setPrice(''); loadAdminData(); }
     setLoading(false);
@@ -101,23 +106,51 @@ export default function AdminPanel() {
   };
 
   const deleteProduct = async (product: Product) => {
-    if (confirm(`¿Borrar ${product.name}? Esto también eliminará las fotos de la nube.`)) {
-      try {
-        const res = await fetch('/api/delete-images', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrls: product.image_url }),
-        });
+    // 1. Confirmación de seguridad
+    if (!confirm(`¿Estás seguro de eliminar "${product.name}"? Esta acción es irreversible.`)) {
+      return;
+    }
 
-        if (!res.ok) console.warn("No se pudieron borrar algunas imágenes de Cloudinary, pero borraremos el registro.");
+    setLoading(true); // Opcional: para mostrar un loader mientras procesa
 
-        const { error } = await supabase.from('products').delete().eq('id', product.id);
-        if (error) throw error;
+    try {
+      // 2. Intento de borrado en Cloudinary (vía tu API interna)
+      console.log("Iniciando limpieza de imágenes en Cloudinary...");
+      
+      const res = await fetch('/api/delete-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrls: product.image_url }),
+      });
 
-        loadAdminData();
-      } catch (err: any) {
-        alert("Error: " + err.message);
+      // Si la API de imágenes falla, lanzamos una advertencia pero no detenemos el proceso
+      if (!res.ok) {
+        console.warn("Aviso: Algunas imágenes no pudieron ser borradas de la nube (posiblemente ya no existían).");
       }
+
+      // 3. Borrado en Supabase
+      console.log("Eliminando registro de la base de datos...");
+      const { error: supabaseError } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', product.id);
+
+      if (supabaseError) {
+        // Si falla la base de datos, lanzamos un error para ir al bloque catch
+        throw new Error(`Error en Base de Datos: ${supabaseError.message}`);
+      }
+
+      // 4. Éxito: Actualizamos la lista local
+      alert("Producto eliminado exitosamente de Luxury RPK.");
+      loadAdminData();
+
+    } catch (err: any) {
+      // 5. Captura de cualquier error en el proceso
+      console.error("Fallo crítico en el proceso de borrado:", err);
+      alert(`No se pudo completar la operación: ${err.message}`);
+      
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -153,22 +186,37 @@ export default function AdminPanel() {
             <input type="text" placeholder="Nombre" value={name} className="w-full p-3 border text-sm font-bold" onChange={(e) => setName(e.target.value)} required />
             <input type="number" placeholder="Precio" value={price} className="w-full p-3 border text-sm font-bold" onChange={(e) => setPrice(e.target.value)} required />
             <div className="grid grid-cols-2 gap-4">
-              <select className="w-full p-3 border uppercase font-bold text-[10px]" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <select 
+                className="w-full p-3 border uppercase font-bold text-[10px]" 
+                value={category} 
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  // Resetear subcategoría según la principal para evitar errores
+                  setSubcategory(e.target.value === 'ropa' ? 'poleras' : 'zapatillas');
+                }}
+              >
                 <option value="ropa">Ropa</option>
                 <option value="calzado">Zapatillas</option>
               </select>
-              <select className="w-full p-3 border uppercase font-bold text-[10px]" value={subcategory} onChange={(e) => setSubcategory(e.target.value)}>
-                <option value="poleras">Poleras</option>
-                <option value="zapatillas">Zapatillas</option>
+
+              <select 
+                className="w-full p-3 border uppercase font-bold text-[10px]" 
+                value={subcategory} 
+                onChange={(e) => setSubcategory(e.target.value)}
+              >
+                {category === 'ropa' ? (
+                  <>
+                    <option value="poleras">Poleras</option>
+                    <option value="polerones">Polerones</option>
+                    <option value="pantalones">Pantalones</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="zapatillas">Zapatillas</option>
+                    <option value="ojotas">Ojotas/Slides</option>
+                  </>
+                )}
               </select>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {images.map((url, i) => <img key={i} src={url} className="aspect-square object-cover border rounded" alt="preview" />)}
-              {images.length < 3 && (
-                <CldUploadWidget uploadPreset="luxuryrpk" onSuccess={handleUploadSuccess}>
-                  {({ open }) => <button type="button" onClick={() => open()} className="aspect-square border-2 border-dashed flex items-center justify-center text-zinc-400 font-black text-[10px] hover:border-black hover:text-black transition-all">+ FOTO</button>}
-                </CldUploadWidget>
-              )}
             </div>
             <button type="submit" disabled={loading} className="w-full bg-black text-white py-4 font-black uppercase italic tracking-widest text-xs disabled:bg-zinc-400">
               {loading ? "Publicando..." : "Publicar Producto"}

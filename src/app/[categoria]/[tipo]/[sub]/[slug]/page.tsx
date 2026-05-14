@@ -32,12 +32,12 @@ export default function ProductDetailPage({
   async function fetchProduct() {
     setLoading(true);
     const decodedSlug = decodeURIComponent(params.slug);
+    
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('slug', decodedSlug)
-      .eq('category', params.tipo)
-      .eq('subcategory', params.sub)
+      .eq('slug', decodedSlug) // El slug es la clave real
+      // Eliminamos los filtros de categoría y subcategoría para evitar conflictos
       .maybeSingle();
 
     if (error) {
