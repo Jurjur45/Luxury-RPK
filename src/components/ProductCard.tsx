@@ -18,7 +18,7 @@ export default function ProductCard({ product }: { product: any }) {
       </div>
       <Link href={productLink} className="p-4 block text-center">
         <h3 className="text-[11px] font-black uppercase italic tracking-tighter text-zinc-900">
-          {product.name}
+          {product.slug}
         </h3>
         <p className="text-[10px] font-medium text-zinc-500 mt-1 italic">
           ${Number(product.price).toLocaleString('es-CL')}
