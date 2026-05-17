@@ -5,13 +5,15 @@ import Link from 'next/link';
 import { CldImage } from 'next-cloudinary';
 import ProductCard from '@/components/ProductCard';
 
+const MARQUEE_TEXT = '— LUXURY RPK — NUEVA COLECCIÓN — ENVÍOS A TODO CHILE — VALDIVIA — ROPA & CALZADO — STOCK LIMITADO ';
+const marqueeContent = Array(8).fill(MARQUEE_TEXT).join('');
+
 export default function Home() {
   const [products, setProducts] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [heroTitle, setHeroTitle] = useState('LUXURY RPK');
   const [imgHero, setImgHero] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
 
   const sectionRef = useRef<HTMLDivElement>(null);
   const scrollToCategories = () => sectionRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -25,175 +27,221 @@ export default function Home() {
       if (contentData) {
         const map = Object.fromEntries(contentData.map(c => [c.key, c.value]));
         setHeroTitle(map.hero_title || 'LUXURY RPK');
-        setImgHero(map.img_hero_bg || ''); 
+        setImgHero(map.img_hero_bg || '');
       }
-
       const { data: productsData } = await supabase.from('products').select('*');
       if (productsData) setProducts(productsData);
-
       const { data: fbData } = await supabase.from('feedbacks').select('*, products(name)').eq('is_approved', true);
       if (fbData) setFeedbacks(fbData);
     }
 
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    
     loadData();
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
     <div className="bg-white text-black antialiased">
-      
-      {/* HEADER */}
-      <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-        isScrolled 
-          ? 'bg-white/90 backdrop-blur-md border-b border-zinc-100 py-2 md:py-3 shadow-sm' 
-          : 'bg-black/10 backdrop-blur-sm py-4 md:py-5 border-b border-white/5'
-      }`}>
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8 flex justify-between items-center">
-          
-          <Link href="/" className={`text-base md:text-xl font-black uppercase italic tracking-tighter transition-colors duration-500 ${
-            isScrolled ? 'text-black' : 'text-white'
-          }`}>
-            LUXURY RPK
-          </Link>
 
-          <nav className="flex gap-4 md:gap-12">
-            {['Ropa', 'Zapatillas', 'Instagram'].map((item) => {
-              if (item === 'Instagram') {
-                return (
-                  <a 
-                    key={item}
-                    href="https://www.instagram.com/luxuryrpk.cl/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500 ${
-                      isScrolled ? 'text-black hover:text-zinc-500' : 'text-white/80 hover:text-white'
-                    }`}
-                  >
-                    {item}
-                  </a>
-                );
-              }
-
-              const categoryPath = item.toLowerCase().replace('zapatillas', 'calzado');
-              // IMPORTANTE: Esta ruta debe coincidir con la lógica de tu SubcategoryPage
-              return (
-                <Link 
-                  key={item}
-                  href={`/${categoryPath}/todas/articulos`} 
-                  className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500 ${
-                    isScrolled ? 'text-black hover:text-zinc-500' : 'text-white/80 hover:text-white'
-                  }`}
-                >
-                  {item}
-                </Link>
-              );
-            })}
-          </nav>
+      {/* ── HERO ── */}
+      <section className="relative h-screen w-full flex items-end overflow-hidden bg-black">
+        <div className="absolute inset-0 z-0">
+          {imgHero && <CldImage src={imgHero} alt="Hero" fill className="object-cover opacity-55" loading="eager" />}
         </div>
-      </header>
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-black/30 z-10" />
 
-      {/* 1. HERO */}
-      <section className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-black">
-        <div className="absolute inset-0 z-0 opacity-70">
-          {imgHero && <CldImage src={imgHero} alt="Hero" fill className="object-cover" priority />}
+        {/* grain texture */}
+        <div className="absolute inset-0 z-10 pointer-events-none opacity-[0.15]"
+          style={{backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E\")",backgroundSize:'200px'}} />
+
+        <div className="relative z-20 w-full max-w-[1440px] mx-auto px-6 md:px-10 pb-14 md:pb-20">
+          <p className="animate-fade-up text-[9px] font-black uppercase tracking-[0.45em] text-amber-400 mb-5">
+            Colección Exclusiva · Valdivia, Chile
+          </p>
+          <h1 className="animate-fade-up-delay text-[18vw] md:text-[13vw] leading-[0.82] font-black uppercase italic text-white mb-10">
+            {heroTitle}
+          </h1>
+          <div className="animate-fade-up-delay-2 flex items-center gap-8 flex-wrap">
+            <button onClick={scrollToCategories}
+              className="border-2 border-white text-white px-10 py-4 text-[9px] font-black uppercase tracking-[0.25em] hover:bg-white hover:text-black transition-all duration-300">
+              Explorar Selección
+            </button>
+            <a href="https://www.instagram.com/luxuryrpk.cl/" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2.5 text-[9px] font-black uppercase tracking-[0.25em] text-white/50 hover:text-white/90 transition-colors">
+              <span className="w-8 h-px bg-current inline-block" />
+              Ver en Instagram
+            </a>
+          </div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 z-10" />
-        <div className="relative z-20 text-center px-6">
-          <h1 className="text-[15vw] md:text-[12vw] leading-none font-black uppercase italic text-white">{heroTitle}</h1>
-          <button onClick={scrollToCategories} className="mt-8 border-2 border-white text-white px-12 py-4 text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-            Explorar Selección
-          </button>
+
+        {/* scroll indicator */}
+        <div className="absolute bottom-8 right-8 z-20 flex flex-col items-center gap-2.5 opacity-40">
+          <span className="text-[7px] text-white font-black uppercase tracking-[0.3em]"
+            style={{writingMode:'vertical-rl', letterSpacing:'0.3em'}}>Scroll</span>
+          <div className="w-px h-12 bg-white animate-scroll-pulse origin-top" />
         </div>
       </section>
 
-      <main className="max-w-[1440px] mx-auto px-6">
-        
-        {/* 2. CATEGORÍAS */}
-        <section ref={sectionRef} className="py-20 space-y-24">
-          {['ropa', 'calzado'].map((cat) => (
+      {/* ── MARQUEE ── */}
+      <div className="bg-black border-y border-zinc-800 py-3.5 overflow-hidden select-none">
+        <div className="flex whitespace-nowrap animate-marquee">
+          <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em] text-zinc-500 flex-none">
+            {marqueeContent}
+          </span>
+          <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em] text-zinc-500 flex-none" aria-hidden="true">
+            {marqueeContent}
+          </span>
+        </div>
+      </div>
+
+      <main className="max-w-[1440px] mx-auto px-6 md:px-10">
+
+        {/* ── CATEGORÍAS ── */}
+        <section ref={sectionRef} className="py-24 space-y-28">
+          {(['ropa', 'calzado'] as const).map((cat, idx) => (
             <div key={cat}>
-              <h2 className="text-4xl font-black uppercase italic tracking-tighter mb-8">
-                {cat === 'calzado' ? 'Zapatillas' : 'Ropa'}
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="flex items-end justify-between mb-10 pb-6 border-b border-zinc-100">
+                <div>
+                  <span className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.45em]">
+                    0{idx + 1}
+                  </span>
+                  <h2 className="text-5xl md:text-6xl font-black uppercase italic tracking-tighter leading-none mt-1">
+                    {cat === 'calzado' ? 'Zapatillas' : 'Ropa'}
+                  </h2>
+                </div>
+                <Link href={`/${cat}/todas/articulos`}
+                  className="hidden md:flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400 hover:text-black transition-colors group">
+                  Ver Todo
+                  <span className="group-hover:translate-x-1.5 transition-transform inline-block">→</span>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {products.filter(p => p.category === cat).slice(0, 4).map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
-                
-                {/* BOTÓN VER TODO: Sincronizado con el Header */}
-                <Link 
-                  href={`/${cat}/todas/articulos`} 
-                  className="aspect-[4/5] border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center hover:border-black transition-all group bg-zinc-50/30"
-                >
-                  <span className="text-[10px] font-black uppercase tracking-widest text-center px-2">
-                    Ver Todo {cat === 'calzado' ? 'Zapatillas' : 'Ropa'}
-                  </span>
-                  <span className="text-xl mt-2 group-hover:translate-x-1 transition-transform">→</span>
-                </Link>
               </div>
+
+              <Link href={`/${cat}/todas/articulos`}
+                className="mt-5 flex md:hidden items-center justify-center gap-3 border border-zinc-200 py-4 text-[9px] font-black uppercase tracking-[0.3em] hover:border-black transition-colors group">
+                Ver Todo {cat === 'calzado' ? 'Zapatillas' : 'Ropa'}
+                <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
+              </Link>
             </div>
           ))}
         </section>
 
-        {/* 3. COMMUNITY FEEDBACK - Versión Alargada y Proporcional */}
-        <section className="py-20 border-t border-zinc-100 overflow-hidden bg-white">
-          <div className="text-center mb-12 px-6">
-            <h2 className="text-4xl font-black uppercase italic tracking-tighter">Feedback</h2>
-            <p className="text-zinc-400 mt-2 uppercase text-[9px] font-black tracking-[0.3em]">Envíos a todo Chile y presencial Valdivia</p>
+        {/* ── STATS STRIP ── */}
+        <div className="border-y border-zinc-100 py-10 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-zinc-100">
+          {[
+            { val: '100%', label: 'Stock Verificado' },
+            { val: 'Chile', label: 'Envíos a Todo el País' },
+            { val: 'VLD', label: 'Atención Presencial · Valdivia' },
+          ].map(({ val, label }) => (
+            <div key={label} className="flex flex-col items-center justify-center gap-1.5 py-8 md:py-0">
+              <span className="text-3xl md:text-4xl font-black italic uppercase">{val}</span>
+              <span className="text-[8px] font-black uppercase tracking-[0.35em] text-zinc-400">{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── FEEDBACK ── */}
+        <section className="py-24">
+          <div className="flex items-end justify-between mb-12 pb-6 border-b border-zinc-100">
+            <div>
+              <span className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.45em]">03</span>
+              <h2 className="text-5xl md:text-6xl font-black uppercase italic tracking-tighter leading-none mt-1">Feedback</h2>
+            </div>
+            <div className="hidden md:flex items-center gap-1.5">
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className="text-amber-400 text-sm">★</span>
+              ))}
+              <span className="ml-2 text-[9px] font-black uppercase tracking-[0.3em] text-zinc-400">Clientes verificados</span>
+            </div>
           </div>
 
-          {/* Contenedor del Scroll Horizontal */}
-          <div className="flex gap-4 overflow-x-auto pb-10 px-6 no-scrollbar snap-x snap-mandatory">
+          <div className="flex gap-4 overflow-x-auto pb-8 no-scrollbar snap-x snap-mandatory -mx-6 px-6 md:-mx-10 md:px-10">
             {feedbacks.map((item) => (
-              <article key={item.id} className="flex-none w-[180px] md:w-[240px] snap-center group">
-                <div className="aspect-[9/16] mb-4 overflow-hidden bg-zinc-50 relative border border-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-xl">
-                  {/* Estrellas minimalistas */}
-                  <div className="absolute top-3 right-3 flex gap-0.5 bg-black/20 backdrop-blur-sm px-2 py-1 rounded-full z-10">
-                    {[...Array(5)].map((_, i) => <span key={i} className="text-amber-400 text-[8px]">★</span>)}
+              <article key={item.id} className="flex-none w-[155px] md:w-[210px] snap-center group cursor-default">
+                <div className="aspect-[9/16] mb-3 overflow-hidden bg-zinc-50 relative">
+                  <div className="absolute top-0 left-0 w-full h-0.5 bg-amber-400 z-10 scale-x-0 group-hover:scale-x-100 transition-transform duration-400 origin-left" />
+                  <div className="absolute top-3 right-3 flex gap-0.5 bg-black/30 backdrop-blur-sm px-1.5 py-1 z-10">
+                    {[...Array(5)].map((_, i) => <span key={i} className="text-amber-400 text-[7px]">★</span>)}
                   </div>
-                  
                   {item.image_url && (
-                    <CldImage 
-                      src={item.image_url} 
-                      alt="Review" 
-                      fill 
-                      className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700" 
+                    <CldImage
+                      src={item.image_url}
+                      alt="Review"
+                      fill
+                      className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-[1.04]"
                     />
                   )}
                 </div>
-                
-                <div className="px-1">
-                   <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest border-l border-zinc-200 pl-2">
-                    {item.products?.name || 'Verified Client'}
-                  </p>
-                </div>
+                <p className="text-[8px] font-black text-zinc-400 uppercase tracking-widest border-l-2 border-amber-400 pl-2 leading-tight">
+                  {item.products?.name || 'Verified Client'}
+                </p>
               </article>
             ))}
 
-            {/* BOTÓN ADMIN: Más pequeño también */}
             {isAdmin && (
-              <Link 
-                href="/admin" 
-                className="flex-none w-[180px] md:w-[240px] snap-center aspect-[9/16] border border-dashed border-zinc-200 flex flex-col items-center justify-center group hover:border-black transition-all bg-zinc-50/50"
-              >
-                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-black">
+              <Link href="/admin"
+                className="flex-none w-[155px] md:w-[210px] snap-center aspect-[9/16] border border-dashed border-zinc-200 flex flex-col items-center justify-center group hover:border-black transition-all">
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-black transition-colors">
                   + Gestionar
                 </span>
               </Link>
             )}
-            
-            <div className="flex-none w-10" />
+            <div className="flex-none w-4" />
           </div>
         </section>
       </main>
 
-      <footer className="bg-black text-white py-20 px-6 mt-20">
-        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
-          <span className="text-4xl font-black italic tracking-tighter uppercase">LUXURY RPK</span>
-          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">© 2026 Crafted in Valdivia</p>
+      {/* ── FOOTER ── */}
+      <footer className="bg-black text-white">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-10 pt-16 md:pt-20 pb-10">
+          <div className="flex flex-col md:flex-row justify-between gap-12 mb-16">
+            <div className="max-w-xs">
+              <span className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase block mb-4 leading-none">
+                LUXURY RPK
+              </span>
+              <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-[0.3em] leading-relaxed">
+                Ropa & Calzado Premium<br/>Valdivia, Chile
+              </p>
+            </div>
+
+            <div className="flex gap-16 md:gap-20">
+              <div>
+                <p className="text-[8px] font-black uppercase tracking-[0.35em] text-zinc-600 mb-5">Colecciones</p>
+                <div className="flex flex-col gap-3">
+                  <Link href="/ropa/todas/articulos"
+                    className="text-[10px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-colors">
+                    Ropa
+                  </Link>
+                  <Link href="/calzado/todas/articulos"
+                    className="text-[10px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-colors">
+                    Zapatillas
+                  </Link>
+                </div>
+              </div>
+              <div>
+                <p className="text-[8px] font-black uppercase tracking-[0.35em] text-zinc-600 mb-5">Contacto</p>
+                <div className="flex flex-col gap-3">
+                  <a href="https://www.instagram.com/luxuryrpk.cl/" target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] font-black uppercase tracking-wider text-zinc-400 hover:text-white transition-colors flex items-center gap-2">
+                    Instagram
+                    <span className="text-zinc-700">↗</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-zinc-800/60 pt-8 flex flex-col md:flex-row justify-between items-center gap-3">
+            <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">
+              © 2026 Luxury RPK · Todos los derechos reservados
+            </p>
+            <p className="text-[8px] text-zinc-700 font-bold uppercase tracking-widest">
+              Crafted in Valdivia
+            </p>
+          </div>
         </div>
       </footer>
     </div>

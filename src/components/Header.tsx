@@ -6,66 +6,47 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
     <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-      isScrolled 
-        ? 'bg-white/90 backdrop-blur-md border-b border-zinc-100 py-2 md:py-3 shadow-sm' 
-        : 'bg-black/10 backdrop-blur-sm py-4 md:py-5 border-b border-white/5'
+      isScrolled
+        ? 'bg-white/95 backdrop-blur-md border-b border-zinc-100 py-3 shadow-sm'
+        : 'bg-transparent py-5'
     }`}>
-      <div className="max-w-[1440px] mx-auto px-4 md:px-8 flex justify-between items-center">
-        
-        <Link href="/" className={`text-base md:text-xl font-black uppercase italic tracking-tighter transition-colors duration-500 ${
+      <div className="max-w-[1440px] mx-auto px-6 md:px-10 flex justify-between items-center">
+
+        <Link href="/" className={`text-lg md:text-2xl font-black uppercase italic tracking-tighter transition-colors duration-500 ${
           isScrolled ? 'text-black' : 'text-white'
         }`}>
           LUXURY RPK
         </Link>
 
-        <nav className="flex gap-4 md:gap-12">
-          {['Ropa', 'Zapatillas', 'Instagram'].map((item) => {
-            if (item === 'Instagram') {
-              return (
-                <a 
-                  key={item}
-                  href="https://www.instagram.com/luxuryrpk.cl/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500 ${
-                    isScrolled ? 'text-black hover:text-zinc-500' : 'text-white/80 hover:text-white'
-                  }`}
-                >
-                  {item}
-                </a>
-              );
-            }
-
-            const cat = item.toLowerCase().replace('zapatillas', 'calzado');
-            
-            // CORRECCIÓN AQUÍ: 
-            // Usamos /todas/articulos para que coincida con el Home y la SubcategoryPage
-            // La barra "/" al principio es fundamental para que no se duplique la ruta
-            const finalHref = `/${cat}/todas/articulos`; 
-
+        <nav className="flex items-center gap-6 md:gap-10">
+          {['Ropa', 'Zapatillas'].map((item) => {
+            const path = item.toLowerCase().replace('zapatillas', 'calzado');
             return (
-              <Link 
-                key={item}
-                href={finalHref} 
-                className={`text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500 ${
-                  isScrolled ? 'text-black hover:text-zinc-500' : 'text-white/80 hover:text-white'
-                }`}
-              >
+              <Link key={item} href={`/${path}/todas/articulos`}
+                className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.25em] transition-colors duration-500 ${
+                  isScrolled ? 'text-black hover:text-zinc-400' : 'text-white/80 hover:text-white'
+                }`}>
                 {item}
               </Link>
             );
           })}
+          <a href="https://www.instagram.com/luxuryrpk.cl/" target="_blank" rel="noopener noreferrer"
+            className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.25em] transition-colors duration-500 flex items-center gap-1.5 ${
+              isScrolled ? 'text-black hover:text-zinc-400' : 'text-white/80 hover:text-white'
+            }`}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            Instagram
+          </a>
         </nav>
-
       </div>
     </header>
   );
